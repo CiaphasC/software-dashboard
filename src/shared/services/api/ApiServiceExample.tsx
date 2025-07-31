@@ -113,9 +113,6 @@ export const ApiServiceExample: React.FC = () => {
     }
   };
 
-  const handleFormSubmit = async (formData: any) => {
-    await formApi.submitForm('/users', formData);
-  };
 
   // =============================================================================
   // RENDER - Renderizado del componente

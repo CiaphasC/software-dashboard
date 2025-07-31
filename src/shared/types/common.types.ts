@@ -180,4 +180,73 @@ export interface RecentActivity {
   timestamp: Date;
   user: string;
   itemId: string;
-} 
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: Date;
+  priority: string;
+}
+
+export interface Report {
+  id: string;
+  title: string;
+  type: string;
+  format: string;
+  dateRange: { start: Date; end: Date };
+  data: any;
+  createdAt: Date;
+  createdBy: string;
+  status: string;
+  downloadUrl: string | null;
+}
+
+export interface SystemConfig {
+  general: {
+    companyName: string;
+    timezone: string;
+    language: string;
+    dateFormat: string;
+    currency: string;
+    address: string;
+    phone: string;
+    website: string;
+  };
+  notifications: {
+    emailNotifications: boolean;
+    pushNotifications: boolean;
+    incidentAlerts: boolean;
+    requirementUpdates: boolean;
+    weeklyReports: boolean;
+    dailyDigest: boolean;
+    smsNotifications: boolean;
+  };
+  security: {
+    twoFactorAuth: boolean;
+    sessionTimeout: number;
+    passwordExpiry: number;
+    maxLoginAttempts: number;
+    passwordMinLength: number;
+    requireSpecialChars: boolean;
+    autoLogout: boolean;
+  };
+  appearance: {
+    theme: string;
+    sidebarCollapsed: boolean;
+    compactMode: boolean;
+    colorScheme: string;
+    fontSize: string;
+  };
+  system: {
+    version: string;
+    lastUpdate: Date;
+    databaseSize: string;
+    backupFrequency: string;
+    maintenanceMode: boolean;
+  };
+}

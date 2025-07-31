@@ -3,17 +3,14 @@
 // Arquitectura de Software Profesional - Reactividad y Asincronismo Optimizado
 // =============================================================================
 
-import { Subject, Observable, BehaviorSubject, combineLatest, timer, of } from 'rxjs';
+import { Subject, Observable, BehaviorSubject, timer, of } from 'rxjs';
 import { 
   map, 
   switchMap, 
   catchError, 
   retry, 
-  debounceTime, 
-  distinctUntilChanged,
   takeUntil,
   shareReplay,
-  filter,
   tap
 } from 'rxjs/operators';
 
@@ -313,9 +310,10 @@ export class ApiService {
    * @param endpoint - Endpoint a invalidar
    */
   invalidateEndpoint(endpoint: string): void {
-    const keysToDelete: string[] = [];
-    // Implementar lógica para encontrar y eliminar claves relacionadas
-    keysToDelete.forEach(key => this.cache.delete(key));
+    const keys = Array.from((this.cache as any).cache.keys()) as string[];
+    keys
+      .filter(key => key.includes(endpoint))
+      .forEach(key => this.cache.delete(key));
   }
 
   // =============================================================================
