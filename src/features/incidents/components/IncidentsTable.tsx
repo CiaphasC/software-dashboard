@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FixedSizeList, ListChildComponentProps } from 'react-window';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AlertTriangle, 
@@ -296,6 +297,166 @@ const DesktopTable: React.FC<{
     [IncidentType.OTHER]: <FileText className="h-4 w-4" />,
   };
 
+  const ROW_HEIGHT = 96;
+
+  interface RowData {
+    incidents: Incident[];
+    onIncidentClick: (incident: Incident) => void;
+    onEditIncident: (incident: Incident) => void;
+    onDeleteIncident: (incident: Incident) => void;
+    onViewIncident: (incident: Incident) => void;
+  }
+
+  const Row = ({ index, style, data }: ListChildComponentProps<RowData>) => {
+    const incident = data.incidents[index];
+    if (!incident) return null;
+    return (
+      <motion.tr
+        style={style}
+        key={incident.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-red-50/30 transition-all duration-300 cursor-pointer group"
+        onClick={() => data.onIncidentClick(incident)}
+      >
+        <td className="px-6 py-4">
+          <div className="space-y-0.5">
+            <div className="font-bold text-gray-900 group-hover:text-orange-700 transition-colors text-base">
+              {incident.title}
+            </div>
+            <div className="text-sm text-gray-600 line-clamp-2 leading-relaxed max-w-sm">
+              {incident.description}
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-1 p-1 bg-orange-50/80 rounded-lg">
+                <MapPin className="h-3 w-3 text-orange-600" />
+                <span className="font-medium">{incident.affectedArea}</span>
+              </div>
+              <div className="flex items-center gap-1 p-1 bg-blue-50/80 rounded-lg">
+                <User className="h-3 w-3 text-blue-600" />
+                <span className="font-medium">{incident.createdBy}</span>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex flex-col gap-0.5">
+            <motion.div whileHover={{ scale: 1.05 }}>
+              <Badge
+                variant={getStatusColor(incident.status)}
+                className="w-fit text-xs font-bold px-3 py-1.5 rounded-full shadow-sm border border-orange-200/30"
+              >
+                {getStatusText(incident.status)}
+              </Badge>
+            </motion.div>
+            {incident.estimatedResolutionDate && (
+              <div className="text-xs text-gray-500 flex items-center gap-1 p-1.5 bg-orange-50/80 rounded-lg">
+                <Calendar className="h-3 w-3 text-orange-600" />
+                <span className="font-medium">{safeFormatEstimatedDate(incident.estimatedResolutionDate)}</span>
+              </div>
+            )}
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex flex-col gap-0.5">
+            <motion.div whileHover={{ scale: 1.05 }}>
+              <Badge
+                variant={getPriorityColor(incident.priority)}
+                className="w-fit text-xs font-bold px-3 py-1.5 rounded-full shadow-sm border border-orange-200/30"
+              >
+                {getPriorityText(incident.priority)}
+              </Badge>
+            </motion.div>
+            <div className="text-xs text-gray-500 flex items-center gap-1 p-1.5 bg-purple-50/80 rounded-lg">
+              <Clock className="h-3 w-3 text-purple-600" />
+              <span className="font-medium">{safeFormatDate(incident.createdAt)}</span>
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2">
+            <motion.div
+              className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-red-100 shadow-lg border border-orange-200/50"
+              whileHover={{ rotate: 5, scale: 1.1 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <div className="text-orange-600">{typeIcons[incident.type]}</div>
+            </motion.div>
+            <span className="text-sm font-bold text-gray-700 capitalize">
+              {incident.type.replace('_', ' ')}
+            </span>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2">
+            <motion.div
+              className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-red-100 shadow-lg border border-orange-200/50"
+              whileHover={{ rotate: 5, scale: 1.1 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <MapPin className="h-4 w-4 text-orange-600" />
+            </motion.div>
+            <div>
+              <span className="text-sm font-bold text-gray-700">{incident.affectedArea}</span>
+              <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                <User className="h-3 w-3" />
+                <span>{incident.assignedTo || 'Sin asignar'}</span>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td className="px-1 py-4">
+          <div className="text-sm text-gray-500 p-1 bg-gray-50/80 rounded-lg">
+            {safeFormatDate(incident.createdAt)}
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2">
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2.5 hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 rounded-xl"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  data.onViewIncident(incident);
+                }}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2.5 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 rounded-xl"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  data.onEditIncident(incident);
+                }}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2.5 hover:bg-red-50 hover:text-red-600 transition-all duration-300 rounded-xl"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  data.onDeleteIncident(incident);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </motion.div>
+          </div>
+        </td>
+      </motion.tr>
+    );
+  };
+
   return (
     <div className="overflow-hidden rounded-3xl border border-orange-100/50 bg-gradient-to-br from-white via-orange-50/20 to-white shadow-2xl backdrop-blur-sm">
       <div className="overflow-x-auto">
@@ -346,157 +507,26 @@ const DesktopTable: React.FC<{
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-orange-100/50">
-            {incidents.map((incident, index) => (
-              <motion.tr
-                key={incident.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-                className="hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-red-50/30 transition-all duration-300 cursor-pointer group"
-                onClick={() => onIncidentClick(incident)}
-              >
-                <td className="px-6 py-4">
-                  <div className="space-y-0.5">
-                    <div className="font-bold text-gray-900 group-hover:text-orange-700 transition-colors text-base">
-                      {incident.title}
-                    </div>
-                    <div className="text-sm text-gray-600 line-clamp-2 leading-relaxed max-w-sm">
-                      {incident.description}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <div className="flex items-center gap-1 p-1 bg-orange-50/80 rounded-lg">
-                        <MapPin className="h-3 w-3 text-orange-600" />
-                        <span className="font-medium">{incident.affectedArea}</span>
-                      </div>
-                      <div className="flex items-center gap-1 p-1 bg-blue-50/80 rounded-lg">
-                        <User className="h-3 w-3 text-blue-600" />
-                        <span className="font-medium">{incident.createdBy}</span>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-col gap-0.5">
-                    <motion.div whileHover={{ scale: 1.05 }}>
-                      <Badge 
-                        variant={getStatusColor(incident.status)}
-                        className="w-fit text-xs font-bold px-3 py-1.5 rounded-full shadow-sm border border-orange-200/30"
-                      >
-                        {getStatusText(incident.status)}
-                      </Badge>
-                    </motion.div>
-                    {incident.estimatedResolutionDate && (
-                      <div className="text-xs text-gray-500 flex items-center gap-1 p-1.5 bg-orange-50/80 rounded-lg">
-                        <Calendar className="h-3 w-3 text-orange-600" />
-                        <span className="font-medium">{safeFormatEstimatedDate(incident.estimatedResolutionDate)}</span>
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-col gap-0.5">
-                    <motion.div whileHover={{ scale: 1.05 }}>
-                      <Badge 
-                        variant={getPriorityColor(incident.priority)}
-                        className="w-fit text-xs font-bold px-3 py-1.5 rounded-full shadow-sm border border-orange-200/30"
-                      >
-                        {getPriorityText(incident.priority)}
-                      </Badge>
-                    </motion.div>
-                    <div className="text-xs text-gray-500 flex items-center gap-1 p-1.5 bg-purple-50/80 rounded-lg">
-                      <Clock className="h-3 w-3 text-purple-600" />
-                      <span className="font-medium">{safeFormatDate(incident.createdAt)}</span>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <motion.div 
-                      className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-red-100 shadow-lg border border-orange-200/50"
-                      whileHover={{ rotate: 5, scale: 1.1 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <div className="text-orange-600">
-                        {typeIcons[incident.type]}
-                      </div>
-                    </motion.div>
-                    <span className="text-sm font-bold text-gray-700 capitalize">
-                      {incident.type.replace('_', ' ')}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <motion.div 
-                      className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-red-100 shadow-lg border border-orange-200/50"
-                      whileHover={{ rotate: 5, scale: 1.1 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <MapPin className="h-4 w-4 text-orange-600" />
-                    </motion.div>
-                    <div>
-                      <span className="text-sm font-bold text-gray-700">
-                        {incident.affectedArea}
-                      </span>
-                      <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                        <User className="h-3 w-3" />
-                        <span>{incident.assignedTo || 'Sin asignar'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-1 py-4">
-                  <div className="text-sm text-gray-500 p-1 bg-gray-50/80 rounded-lg">
-                    {safeFormatDate(incident.createdAt)}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-2.5 hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 rounded-xl"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onViewIncident(incident);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-2.5 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 rounded-xl"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditIncident(incident);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-2.5 hover:bg-red-50 hover:text-red-600 transition-all duration-300 rounded-xl"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteIncident(incident);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </motion.div>
-                  </div>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
+          <FixedSizeList
+            outerElementType={React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
+              (props, ref) => (
+                <tbody ref={ref} {...props} className="bg-white divide-y divide-orange-100/50" />
+              )
+            )}
+            height={Math.min(incidents.length, 10) * ROW_HEIGHT}
+            itemCount={incidents.length}
+            itemSize={ROW_HEIGHT}
+            width="100%"
+            itemData={{
+              incidents,
+              onIncidentClick,
+              onEditIncident,
+              onDeleteIncident,
+              onViewIncident,
+            }}
+          >
+            {Row}
+          </FixedSizeList>
         </table>
       </div>
     </div>
