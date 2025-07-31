@@ -187,8 +187,7 @@ export const reportsApi = {
   async exportData(format: 'csv' | 'excel'): Promise<string> {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    const incidents = generateMockData.incidents(100);
-    const requirements = generateMockData.requirements(50);
+
     
     // Simular exportación
     const fileName = `export_${format}_${Date.now()}.${format}`;
@@ -232,9 +231,7 @@ export const reportsApi = {
 
   // Programar reporte recurrente
   async scheduleRecurringReport(
-    type: string,
-    frequency: 'daily' | 'weekly' | 'monthly',
-    recipients: string[]
+    frequency: 'daily' | 'weekly' | 'monthly'
   ): Promise<{
     id: string;
     status: 'scheduled';

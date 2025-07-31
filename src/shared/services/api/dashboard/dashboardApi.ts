@@ -69,12 +69,12 @@ const generateDashboardMetrics = async (): Promise<DashboardMetrics> => {
 
   // Generar datos por mes
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
-  const incidentsByMonth = months.map((month, index) => ({
+  const incidentsByMonth = months.map(month => ({
     month,
     count: Math.floor(Math.random() * 20) + 5
   }));
   
-  const requirementsByMonth = months.map((month, index) => ({
+  const requirementsByMonth = months.map(month => ({
     month,
     count: Math.floor(Math.random() * 15) + 3
   }));
@@ -187,5 +187,16 @@ export const dashboardApi = {
       errorRate: Math.random() * 0.5,
       activeUsers: 25 + Math.floor(Math.random() * 15)
     };
+  },
+
+  // Obtener actividades recientes (simulado)
+  async getRecentActivities(): Promise<any[]> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return [];
+  },
+
+  // Obtener incidencias (delegado a incidentsApi)
+  async getIncidents() {
+    return incidentsApi.getIncidents();
   }
-}; 
+};

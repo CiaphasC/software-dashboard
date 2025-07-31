@@ -18,10 +18,8 @@ import {
   map, 
   catchError, 
   switchMap, 
-  distinctUntilChanged, 
-  shareReplay,
-  startWith,
-  debounceTime
+  distinctUntilChanged,
+  shareReplay
 } from 'rxjs/operators';
 import { User, UserRole } from '@/shared/types/common.types';
 import { authApi } from './api/auth/authApi';
@@ -72,20 +70,20 @@ class UsersService {
     shareReplay(1)
   );
 
-  public readonly users$ = this.state$.pipe(
-    map(state => state.users),
+    public readonly users$ = this.state$.pipe(
+      map((state: UsersState) => state.users),
     distinctUntilChanged(),
     shareReplay(1)
   );
 
-  public readonly loading$ = this.state$.pipe(
-    map(state => state.loading),
+    public readonly loading$ = this.state$.pipe(
+      map((state: UsersState) => state.loading),
     distinctUntilChanged(),
     shareReplay(1)
   );
 
-  public readonly error$ = this.state$.pipe(
-    map(state => state.error),
+    public readonly error$ = this.state$.pipe(
+      map((state: UsersState) => state.error),
     distinctUntilChanged(),
     shareReplay(1)
   );

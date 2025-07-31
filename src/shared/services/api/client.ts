@@ -139,6 +139,8 @@ export const apiClient = new ApiClient();
 // Para desarrollo: cliente que simula respuestas
 export class MockApiClient extends ApiClient {
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+    void endpoint;
+    void options;
     // Simular delay de red
     await this.simulateDelay(300 + Math.random() * 500);
     

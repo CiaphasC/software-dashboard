@@ -78,7 +78,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateSection = <K extends keyof SystemConfig>(section: K, value: Partial<SystemConfig[K]>) => {
-    setConfigState(prev => ({
+    setConfigState((prev: SystemConfig) => ({
       ...prev,
       [section]: {
         ...prev[section],
