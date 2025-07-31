@@ -1,0 +1,25 @@
+{
+  "lastUpdated": "2024-12-27T00:00:00.000Z",
+  "metrics": {
+    "totalIncidents": 0,
+    "openIncidents": 0,
+    "inProgressIncidents": 0,
+    "resolvedIncidents": 0,
+    "closedIncidents": 0,
+    "totalRequirements": 0,
+    "pendingRequirements": 0,
+    "deliveredRequirements": 0,
+    "averageResolutionTime": 0
+  },
+  "charts": {
+    "incidentsByMonth": [],
+    "requirementsByMonth": [],
+    "topDepartments": []
+  },
+  "trends": {
+    "incidentTrend": { "value": 0, "isPositive": true },
+    "openIncidentTrend": { "value": 0, "isPositive": true },
+    "requirementTrend": { "value": 0, "isPositive": true },
+    "pendingRequirementTrend": { "value": 0, "isPositive": true }
+  }
+} 
