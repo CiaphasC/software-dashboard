@@ -2,6 +2,7 @@
 import { DashboardMetrics } from '@/shared/types/common.types';
 import { incidentsApi } from '../incidents/incidentsApi';
 import { requirementsApi } from '../requirements/requirementsApi';
+import { log } from '@/shared/utils/logger';
 
 // Simulación de datos de dashboard
 let dashboardData: DashboardMetrics | null = null;
@@ -57,7 +58,7 @@ const generateDashboardMetrics = async (): Promise<DashboardMetrics> => {
   }
   
   // Debug: Mostrar información del cálculo
-  console.log('🔍 Dashboard Metrics Debug (Mock Data):', {
+  log('🔍 Dashboard Metrics Debug (Mock Data):', {
     totalIncidents,
     highPriority: highPriorityIncidents,
     mediumPriority: mediumPriorityIncidents,
