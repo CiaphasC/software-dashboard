@@ -70,8 +70,8 @@ src/
 
 ```bash
 # Clonar el repositorio
-git clone <repository-url>
-cd sistema-incidencias
+git clone https://github.com/CiaphasC/software-dashboard.git
+cd software-dashboard
 
 # Instalar dependencias
 npm install
@@ -182,4 +182,4 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 ## 📞 Soporte
 
-Para soporte técnico o preguntas, contacta al equipo de desarrollo. 
+Para soporte técnico o preguntas, contacta al equipo de desarrollo.
