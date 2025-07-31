@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { log } from '@/shared/utils/logger';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -25,9 +26,9 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     if (metrics) {
       // Inicializar actividades recientes basadas en los datos
-      console.log('Dashboard: Inicializando actividades...');
-      console.log('Dashboard: Incidencias disponibles:', metrics.incidents?.length || 0);
-      console.log('Dashboard: Requerimientos disponibles:', metrics.requirements?.length || 0);
+      log('Dashboard: Inicializando actividades...');
+      log('Dashboard: Incidencias disponibles:', metrics.incidents?.length || 0);
+      log('Dashboard: Requerimientos disponibles:', metrics.requirements?.length || 0);
       
       generateInitialActivities(
         metrics.incidents || [],

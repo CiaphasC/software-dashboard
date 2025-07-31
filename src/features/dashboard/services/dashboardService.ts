@@ -17,6 +17,7 @@
 
 import { dashboardApi } from '@/shared/services';
 import { DashboardMetrics } from '@/shared/types/common.types';
+import { log } from '@/shared/utils/logger';
 
 /**
  * Interfaz para las respuestas del servicio del dashboard
@@ -41,9 +42,9 @@ export class DashboardService {
    */
   static async getDashboardMetrics(): Promise<DashboardServiceResponse> {
     try {
-      console.log('DashboardService: Obteniendo métricas del dashboard...');
+      log('DashboardService: Obteniendo métricas del dashboard...');
       const data = await dashboardApi.getDashboardMetrics();
-      console.log('DashboardService: Métricas obtenidas exitosamente:', data);
+      log('DashboardService: Métricas obtenidas exitosamente:', data);
       
       return {
         success: true,
@@ -66,9 +67,9 @@ export class DashboardService {
    */
   static async refreshDashboardMetrics(): Promise<DashboardServiceResponse> {
     try {
-      console.log('DashboardService: Refrescando métricas del dashboard...');
+      log('DashboardService: Refrescando métricas del dashboard...');
       const data = await dashboardApi.getDashboardMetrics();
-      console.log('DashboardService: Métricas refrescadas exitosamente:', data);
+      log('DashboardService: Métricas refrescadas exitosamente:', data);
       
       return {
         success: true,
@@ -96,14 +97,14 @@ export class DashboardService {
     status?: string;
   }): Promise<DashboardServiceResponse> {
     try {
-      console.log('DashboardService: Obteniendo métricas con filtro:', filter);
+      log('DashboardService: Obteniendo métricas con filtro:', filter);
       
       // Aquí se implementaría la lógica de filtrado
       // Por ahora usamos la API base
       const data = await dashboardApi.getDashboardMetrics();
       
       // TODO: Implementar filtrado real cuando la API lo soporte
-      console.log('DashboardService: Métricas filtradas obtenidas:', data);
+      log('DashboardService: Métricas filtradas obtenidas:', data);
       
       return {
         success: true,
@@ -127,7 +128,7 @@ export class DashboardService {
    */
   static async getRealTimeStats(): Promise<DashboardServiceResponse> {
     try {
-      console.log('DashboardService: Obteniendo estadísticas en tiempo real...');
+      log('DashboardService: Obteniendo estadísticas en tiempo real...');
       
       // TODO: Implementar endpoint de tiempo real cuando esté disponible
       const data = await dashboardApi.getDashboardMetrics();
@@ -154,7 +155,7 @@ export class DashboardService {
    */
   static async exportDashboardData(format: 'csv' | 'excel' | 'pdf'): Promise<DashboardServiceResponse> {
     try {
-      console.log(`DashboardService: Exportando datos en formato ${format}...`);
+      log(`DashboardService: Exportando datos en formato ${format}...`);
       
       // TODO: Implementar exportación cuando esté disponible
       const data = await dashboardApi.getDashboardMetrics();
@@ -181,7 +182,7 @@ export class DashboardService {
    */
   static async validateDataFreshness(): Promise<{ isFresh: boolean; lastUpdated?: string }> {
     try {
-      console.log('DashboardService: Validando frescura de datos...');
+      log('DashboardService: Validando frescura de datos...');
       
       // TODO: Implementar validación de frescura cuando esté disponible
       return {

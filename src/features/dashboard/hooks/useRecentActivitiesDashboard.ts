@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { log } from '@/shared/utils/logger';
 import { Subscription } from 'rxjs';
 import { RecentActivity, activityStreamService } from '@/shared/hooks/useRecentActivities';
 
@@ -204,7 +205,7 @@ export const useRecentActivitiesDashboard = (): UseRecentActivitiesDashboardRetu
    * Útil para actualizaciones manuales o después de acciones del usuario
    */
   const refreshActivities = useCallback(() => {
-    console.log('Refrescando actividades recientes...');
+    log('Refrescando actividades recientes...');
     setLoading(true);
     setError(null);
     
@@ -220,12 +221,12 @@ export const useRecentActivitiesDashboard = (): UseRecentActivitiesDashboardRetu
 
   // Efecto principal para suscribirse al stream de actividades
   useEffect(() => {
-    console.log('useRecentActivitiesDashboard: Iniciando suscripción...');
+    log('useRecentActivitiesDashboard: Iniciando suscripción...');
     
     // Suscribirse solo a las últimas 3 actividades para el dashboard
     subscriptionRef.current = activityStreamService.recentActivities$.subscribe({
       next: (recentActivities) => {
-        console.log('useRecentActivitiesDashboard: Recibidas actividades:', recentActivities.length);
+        log('useRecentActivitiesDashboard: Recibidas actividades:', recentActivities.length);
         setActivities(recentActivities);
         setLoading(false);
         setError(null);
@@ -239,7 +240,7 @@ export const useRecentActivitiesDashboard = (): UseRecentActivitiesDashboardRetu
 
     // Cleanup al desmontar el componente
     return () => {
-      console.log('useRecentActivitiesDashboard: Limpiando suscripción...');
+      log('useRecentActivitiesDashboard: Limpiando suscripción...');
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe();
         subscriptionRef.current = null;

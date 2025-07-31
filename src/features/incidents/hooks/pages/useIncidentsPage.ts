@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { log } from '@/shared/utils/logger';
 import { useIncidents, useModal, useIncidentFilters, useFilterOptions } from '@/features/incidents/hooks';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Incident, IncidentStatus } from '@/shared/types/common.types';
@@ -44,22 +45,22 @@ export const useIncidentsPage = () => {
 
   // Manejadores de acciones de incidencias
   const handleIncidentClick = (incident: Incident) => {
-    console.log('Incident clicked:', incident);
+    log('Incident clicked:', incident);
     // Aquí puedes implementar la lógica de clic en incidencia
   };
 
   const handleEditIncident = (incident: Incident) => {
-    console.log('Edit incident:', incident);
+    log('Edit incident:', incident);
     // Aquí puedes implementar la lógica de edición
   };
 
   const handleDeleteIncident = (incident: Incident) => {
-    console.log('Delete incident:', incident);
+    log('Delete incident:', incident);
     // Aquí puedes implementar la lógica de eliminación
   };
 
   const handleViewIncident = (incident: Incident) => {
-    console.log('View incident:', incident);
+    log('View incident:', incident);
     // Aquí puedes implementar la lógica de visualización
   };
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { log } from '@/shared/utils/logger';
 import { DashboardService } from '@/features/dashboard/services';
 import { DashboardMetrics } from '@/shared/types/common.types';
 
@@ -94,11 +95,11 @@ export const useDashboardMetrics = () => {
     const fetchMetrics = async () => {
       try {
         setLoading(true);
-        console.log('Fetching dashboard metrics...');
+        log('Fetching dashboard metrics...');
         const response = await DashboardService.getDashboardMetrics();
         
         if (response.success && response.data) {
-          console.log('Dashboard metrics received:', response.data);
+          log('Dashboard metrics received:', response.data);
           setMetrics(response.data);
         } else {
           console.error('Error fetching dashboard metrics:', response.error);

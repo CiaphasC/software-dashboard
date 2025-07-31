@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { log } from '@/shared/utils/logger';
 import { Subscription } from 'rxjs';
 import { dashboardReactiveService, DashboardState, DashboardConfig } from '@/features/dashboard/services/dashboardReactiveService';
 
@@ -99,14 +100,14 @@ export const useDashboardReactive = (config?: Partial<DashboardConfig>): UseDash
   
   // Suscripciones a streams reactivos
   useEffect(() => {
-    console.log('useDashboardReactive: Configurando suscripciones...');
+    log('useDashboardReactive: Configurando suscripciones...');
     
     const subscriptions: Subscription[] = [];
     
     // Suscripción al estado principal
     const stateSubscription = dashboardReactiveService.state$.subscribe({
       next: (newState) => {
-        console.log('useDashboardReactive: Estado actualizado:', newState);
+        log('useDashboardReactive: Estado actualizado:', newState);
         setState(newState);
       },
       error: (error) => {
@@ -118,7 +119,7 @@ export const useDashboardReactive = (config?: Partial<DashboardConfig>): UseDash
     // Suscripción a métricas procesadas
     const metricCardsSubscription = dashboardReactiveService.metricCards$.subscribe({
       next: (cards) => {
-        console.log('useDashboardReactive: Métricas actualizadas:', cards.length);
+        log('useDashboardReactive: Métricas actualizadas:', cards.length);
         setMetricCards(cards);
       },
       error: (error) => {
@@ -130,7 +131,7 @@ export const useDashboardReactive = (config?: Partial<DashboardConfig>): UseDash
     // Suscripción a gráficos procesados
     const chartCardsSubscription = dashboardReactiveService.chartCards$.subscribe({
       next: (cards) => {
-        console.log('useDashboardReactive: Gráficos actualizados:', cards.length);
+        log('useDashboardReactive: Gráficos actualizados:', cards.length);
         setChartCards(cards);
       },
       error: (error) => {
@@ -142,7 +143,7 @@ export const useDashboardReactive = (config?: Partial<DashboardConfig>): UseDash
     // Suscripción a datos de gráficos
     const chartDataSubscription = dashboardReactiveService.chartData$.subscribe({
       next: (data) => {
-        console.log('useDashboardReactive: Datos de gráficos actualizados');
+        log('useDashboardReactive: Datos de gráficos actualizados');
         setChartData(data);
       },
       error: (error) => {
@@ -156,7 +157,7 @@ export const useDashboardReactive = (config?: Partial<DashboardConfig>): UseDash
     
     // Cleanup al desmontar
     return () => {
-      console.log('useDashboardReactive: Limpiando suscripciones...');
+      log('useDashboardReactive: Limpiando suscripciones...');
       subscriptions.forEach(sub => {
         if (!sub.closed) {
           sub.unsubscribe();
@@ -168,32 +169,32 @@ export const useDashboardReactive = (config?: Partial<DashboardConfig>): UseDash
   
   // Métodos de control
   const refresh = () => {
-    console.log('useDashboardReactive: Refrescando...');
+    log('useDashboardReactive: Refrescando...');
     dashboardReactiveService.refresh();
   };
   
   const forceRefresh = () => {
-    console.log('useDashboardReactive: Forzando refresco...');
+    log('useDashboardReactive: Forzando refresco...');
     dashboardReactiveService.forceRefresh();
   };
   
   const clearError = () => {
-    console.log('useDashboardReactive: Limpiando error...');
+    log('useDashboardReactive: Limpiando error...');
     dashboardReactiveService.clearError();
   };
   
   const startPolling = () => {
-    console.log('useDashboardReactive: Iniciando polling...');
+    log('useDashboardReactive: Iniciando polling...');
     dashboardReactiveService.startPolling();
   };
   
   const stopPolling = () => {
-    console.log('useDashboardReactive: Deteniendo polling...');
+    log('useDashboardReactive: Deteniendo polling...');
     dashboardReactiveService.stopPolling();
   };
   
   const updateConfig = (newConfig: Partial<DashboardConfig>) => {
-    console.log('useDashboardReactive: Actualizando configuración...', newConfig);
+    log('useDashboardReactive: Actualizando configuración...', newConfig);
     dashboardReactiveService.updateConfig(newConfig);
   };
   

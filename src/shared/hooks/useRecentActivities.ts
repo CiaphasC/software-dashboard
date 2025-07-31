@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { log } from '@/shared/utils/logger';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { map, distinctUntilChanged, debounceTime } from 'rxjs/operators';
 import { Incident, Requirement } from '@/shared/types/common.types';
@@ -40,11 +41,11 @@ class ActivityStreamService {
     // Verificar si ya existe una actividad con el mismo ID
     const existingActivity = this.activities.find(a => a.id === activity.id);
     if (existingActivity) {
-      console.log('Actividad duplicada detectada, saltando:', activity.id);
+      log('Actividad duplicada detectada, saltando:', activity.id);
       return;
     }
     
-    console.log('Agregando actividad:', activity);
+    log('Agregando actividad:', activity);
     this.activities.unshift(activity);
     
     // Mantener solo las últimas maxActivities para evitar memory leaks
@@ -52,7 +53,7 @@ class ActivityStreamService {
       this.activities = this.activities.slice(0, this.maxActivities);
     }
     
-    console.log('Total actividades en stream:', this.activities.length);
+    log('Total actividades en stream:', this.activities.length);
     // Emitir nueva lista
     this.activitiesSubject.next([...this.activities]);
   }
@@ -185,11 +186,11 @@ export const useAllActivities = () => {
   const subscriptionRef = useRef<Subscription | null>(null);
 
   useEffect(() => {
-    console.log('useAllActivities: Suscribiéndose al stream...');
+    log('useAllActivities: Suscribiéndose al stream...');
     // Suscribirse a todas las actividades
     subscriptionRef.current = activityStreamService.allActivities$.subscribe({
       next: (allActivities) => {
-        console.log('useAllActivities: Recibidas actividades:', allActivities.length);
+        log('useAllActivities: Recibidas actividades:', allActivities.length);
         setActivities(allActivities);
         setLoading(false);
       },
@@ -221,13 +222,13 @@ export const generateInitialActivities = (
 ) => {
   // Evitar generar actividades duplicadas
   if (hasInitialized) {
-    console.log('Actividades ya inicializadas, saltando...');
+    log('Actividades ya inicializadas, saltando...');
     return [];
   }
   
-  console.log('Generando actividades iniciales...');
-  console.log('Incidencias recibidas:', incidents.length);
-  console.log('Requerimientos recibidos:', requirements.length);
+  log('Generando actividades iniciales...');
+  log('Incidencias recibidas:', incidents.length);
+  log('Requerimientos recibidos:', requirements.length);
   
   const activities: RecentActivity[] = [];
 
@@ -290,15 +291,15 @@ export const generateInitialActivities = (
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
     .slice(0, 20); // Solo las 20 más recientes para inicialización
 
-  console.log('Actividades generadas:', sortedActivities.length);
-  console.log('Actividades:', sortedActivities);
+  log('Actividades generadas:', sortedActivities.length);
+  log('Actividades:', sortedActivities);
 
   // Agregar al stream de manera optimizada
   sortedActivities.forEach(activity => {
     activityStreamService.addActivity(activity);
   });
 
-  console.log('Actividades agregadas al stream');
+  log('Actividades agregadas al stream');
   hasInitialized = true; // Marcar como inicializado
   return sortedActivities;
 };
