@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { log } from '@/shared/utils/logger';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { 
@@ -202,7 +203,7 @@ const Activities: React.FC = () => {
         left: rect.left,
         width: rect.width
       };
-      console.log('Dropdown position:', newPosition, 'Input rect:', rect);
+      log('Dropdown position:', newPosition, 'Input rect:', rect);
       setDropdownPosition(newPosition);
     }
   }, []);

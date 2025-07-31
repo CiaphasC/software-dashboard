@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { log } from '@/shared/utils/logger';
 import { useRequirements, useRequirementModal } from '@/features/requirements/hooks';
 import { Requirement, RequirementType, RequirementStatus, Priority } from '@/shared/types/common.types';
 
@@ -95,22 +96,22 @@ export const useRequirementsPage = () => {
 
   // Manejadores de acciones de requerimientos
   const handleRequirementClick = (requirement: Requirement) => {
-    console.log('Requirement clicked:', requirement);
+    log('Requirement clicked:', requirement);
     // Aquí puedes implementar la lógica de clic en requerimiento
   };
 
   const handleEditRequirement = (requirement: Requirement) => {
-    console.log('Edit requirement:', requirement);
+    log('Edit requirement:', requirement);
     // Aquí puedes implementar la lógica de edición
   };
 
   const handleDeleteRequirement = (requirement: Requirement) => {
-    console.log('Delete requirement:', requirement);
+    log('Delete requirement:', requirement);
     // Aquí puedes implementar la lógica de eliminación
   };
 
   const handleViewRequirement = (requirement: Requirement) => {
-    console.log('View requirement:', requirement);
+    log('View requirement:', requirement);
     // Aquí puedes implementar la lógica de visualización
   };
 

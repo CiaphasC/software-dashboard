@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { cleanupActivities } from './useRecentActivities';
+import { log } from '@/shared/utils/logger';
 
 export const useCleanup = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -9,7 +10,7 @@ export const useCleanup = () => {
     const cleanupInterval = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
     
     const performCleanup = () => {
-      console.log('Ejecutando limpieza automática de actividades...');
+      log('Ejecutando limpieza automática de actividades...');
       cleanupActivities();
     };
 

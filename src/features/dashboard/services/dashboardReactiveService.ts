@@ -17,6 +17,7 @@ import {
   timeout
 } from 'rxjs/operators';
 import { DashboardService } from './dashboardService';
+import { log } from '@/shared/utils/logger';
 import { DashboardMetrics } from '@/shared/types/common.types';
 
 /**
@@ -557,7 +558,7 @@ export class DashboardReactiveService {
    * Destruye el servicio y limpia recursos
    */
   public destroy(): void {
-    console.log('DashboardReactiveService: Destruyendo servicio...');
+    log('DashboardReactiveService: Destruyendo servicio...');
     this.destroySubject.next();
     this.destroySubject.complete();
     this.stateSubject.complete();
