@@ -5,16 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, ShieldCheck, User, Lock, Sparkles, Zap, Activity, BarChart3 } from 'lucide-react';
-import { gsap } from 'gsap';
-import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Card, CardContent, CardHeader, CardFooter } from '@/shared/components/ui/Card';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { loginSchema, type LoginFormData } from '@/shared/utils/schemas';
 
-// Registrar plugins de GSAP
-gsap.registerPlugin(MotionPathPlugin);
 
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +27,7 @@ const Login: React.FC = () => {
   const backgroundRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
+  const gsapRef = useRef<any>(null);
 
   const {
     register,
@@ -42,7 +39,13 @@ const Login: React.FC = () => {
 
   // Animaciones GSAP profesionales
   useEffect(() => {
-    const ctx = gsap.context(() => {
+    let ctx: any;
+    (async () => {
+      const { gsap } = await import('gsap');
+      const { MotionPathPlugin } = await import('gsap/MotionPathPlugin');
+      gsap.registerPlugin(MotionPathPlugin);
+      gsapRef.current = gsap;
+      ctx = gsap.context(() => {
       // Timeline principal
       const masterTl = gsap.timeline();
 
@@ -203,15 +206,16 @@ const Login: React.FC = () => {
       }
 
     }, containerRef);
+    })();
 
-    return () => ctx.revert();
+    return () => ctx && ctx.revert();
   }, []);
 
   const onSubmit = useCallback(async (data: LoginFormData) => {
     setIsLoading(true);
     
     // Animación de carga con efecto 3D
-    gsap.to(cardRef.current, {
+    gsapRef.current?.to(cardRef.current, {
       scale: 0.95,
       rotationY: 5,
       duration: 0.2,
@@ -222,13 +226,13 @@ const Login: React.FC = () => {
       await login(data.email, data.password);
       
       // Animación de éxito con efecto 3D
-      gsap.to(cardRef.current, {
+      gsapRef.current?.to(cardRef.current, {
         scale: 1.05,
         rotationY: -5,
         duration: 0.3,
         ease: "power2.out",
         onComplete: () => {
-          gsap.to(cardRef.current, {
+          gsapRef.current?.to(cardRef.current, {
             scale: 1,
             rotationY: 0,
             duration: 0.2,
@@ -241,7 +245,7 @@ const Login: React.FC = () => {
       navigate('/dashboard');
     } catch (error) {
              // Animación de error con shake 3D
-       gsap.to(cardRef.current, {
+       gsapRef.current?.to(cardRef.current, {
          rotationY: [-10, 10, -10, 10, 0] as any,
          rotationX: [-5, 5, -5, 5, 0] as any,
          duration: 0.6,
