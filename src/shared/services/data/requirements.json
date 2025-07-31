@@ -1,0 +1,34 @@
+[
+  {
+    "id": "req_001",
+    "title": "Solicitud de nueva impresora para contabilidad",
+    "description": "Se requiere una impresora láser para el departamento de contabilidad debido al alto volumen de documentos",
+    "type": "equipment",
+    "priority": "medium",
+    "status": "pending",
+    "requestingArea": "Contabilidad",
+    "assignedTo": "tecnico",
+    "createdBy": "admin",
+    "estimatedDeliveryDate": "2025-01-05T00:00:00.000Z",
+    "createdAt": "2024-12-25T00:00:00.000Z",
+    "updatedAt": "2024-12-25T00:00:00.000Z",
+    "attachments": [],
+    "comments": []
+  },
+  {
+    "id": "req_002",
+    "title": "Instalación de software de diseño",
+    "description": "Se necesita instalar Adobe Creative Suite en la computadora del área de marketing",
+    "type": "service",
+    "priority": "high",
+    "status": "in_progress",
+    "requestingArea": "Marketing",
+    "assignedTo": "tecnico",
+    "createdBy": "solicitante",
+    "estimatedDeliveryDate": "2024-12-31T00:00:00.000Z",
+    "createdAt": "2024-12-21T00:00:00.000Z",
+    "updatedAt": "2024-12-26T00:00:00.000Z",
+    "attachments": [],
+    "comments": []
+  }
+] 
