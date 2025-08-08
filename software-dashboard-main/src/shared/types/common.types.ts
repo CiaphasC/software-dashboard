@@ -118,22 +118,8 @@ export interface PendingUser {
 // INCIDENT TYPES - Tipos de incidencias compatibles con Supabase
 // =============================================================================
 
-export interface Incident {
-  id: string;
-  title: string;
-  description: string;
-  type: IncidentType;
-  priority: Priority;
-  status: IncidentStatus;
-  affectedArea: string;
-  reportedBy: string;
-  assignedTo?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  resolvedAt?: DateOrString;
-  estimatedResolutionDate?: DateOrString;
-  comments?: string;
-}
+// Eliminado: La interfaz Incident se unifica al dominio `IncidentDomain` en `shared/domain/incident`.
+// Mantener solo enums y tipos compartidos relacionados fuera de este bloque si existieran.
 
 // =============================================================================
 // REQUIREMENT TYPES - Tipos de requerimientos compatibles con Supabase

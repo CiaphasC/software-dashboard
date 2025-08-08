@@ -2,29 +2,39 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 // import { es, enUS } from 'date-fns/locale';
 import currency from 'currency.js';
-import { IncidentStatus, RequirementStatus, Priority } from '@/shared/types/common.types';
+import { IncidentStatus, RequirementStatus, Priority, IncidentType, RequirementType } from '@/shared/types/common.types';
 import { useSettingsStore } from '@/shared/store';
 import type { Department } from '@/shared/services/supabase';
-import { useDateUtils } from '@/shared/utils/dateUtils';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+
+
 export function useFormatters() {
   const { config } = useSettingsStore();
+  const locale = config.general.language === 'es' ? 'es-PE' : 'en-US';
+  const tz = config.general.timezone || 'America/Lima';
+  const dateFormat = config.general.dateFormat || 'dd/MM/yyyy';
   const currencyCode = config.general.currency || 'PEN';
 
-  // Centralizar fechas con dateUtils
-  const { formatDate: duFormatDate, formatDateTime: duFormatDateTime, language, timezone } = useDateUtils();
+  function formatDate(date: Date | string) {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    // Formato personalizado
+    let options: Intl.DateTimeFormatOptions = { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: tz };
+    if (dateFormat === 'MM/DD/YYYY') options = { ...options, month: '2-digit', day: '2-digit', year: 'numeric' };
+    if (dateFormat === 'YYYY-MM-DD') options = { ...options, year: 'numeric', month: '2-digit', day: '2-digit' };
+    return new Intl.DateTimeFormat(locale, options).format(d);
+  }
 
-  const formatDate = (date: Date | string) => duFormatDate(date);
-  const formatDateTime = (date: Date | string) => duFormatDateTime(date);
-
-  // Valores informativos (evitar duplicación de lógica de formato)
-  const locale = language === 'es' ? 'es-PE' : 'en-US';
-  const tz = timezone || 'America/Lima';
-  const dateFormat = config.general.dateFormat || 'dd/MM/yyyy';
+  function formatDateTime(date: Date | string) {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    let options: Intl.DateTimeFormatOptions = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: tz };
+    return new Intl.DateTimeFormat(locale, options).format(d);
+  }
 
   function formatMoney(amount: number) {
     return currency(amount, {
@@ -139,7 +149,7 @@ export function debounce<T extends (...args: any[]) => any>(
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
-}
+} 
 
 // =============================================================================
 // DATA TRANSFORMATION - Transformación de datos para formularios
@@ -221,7 +231,7 @@ export const findDepartmentById = (departments: Department[], id: number): Depar
  */
 export const findDepartmentByName = (departments: Department[], name: string): Department | undefined => {
   return departments.find(dept => dept.name === name);
-};
+}; 
 
 /**
  * Convierte un string de Supabase a enum de estado de incidencia
@@ -251,7 +261,7 @@ export const convertStringToRequirementStatus = (status: string): RequirementSta
     case 'closed': return RequirementStatus.CLOSED;
     default: return RequirementStatus.PENDING;
   }
-};
+}; 
 
 /**
  * Formatea una duración en horas a un formato legible

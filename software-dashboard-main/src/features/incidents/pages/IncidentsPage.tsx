@@ -22,12 +22,12 @@ import { IncidentsFloatingParticles } from '@/shared/components/ui';
 
 import { IncidentForm, IncidentsHeader } from '@/features/incidents/components';
 import { useIncidentsPage } from '@/features/incidents/hooks/pages/useIncidentsPage';
-import { Incident } from '@/shared/types/common.types';
 import { IncidentsTable } from '@/features/incidents/components/IncidentsTable';
 import { IncidentsFilters } from '@/features/incidents/components/IncidentsFilters';
 import { useAuthStore } from '@/shared/store';
 import { transformIncidentForForm } from '@/shared/utils/utils';
 import toast from 'react-hot-toast';
+import type { IncidentDomain } from '@/shared/domain/incident';
 
 // Componente de partículas flotantes - Ahora usando el componente compartido
 
@@ -227,12 +227,12 @@ export const Incidents: React.FC = () => {
   } = useIncidentsPage();
 
   // Manejadores simplificados
-  const handleViewIncidentModal = (incident: Incident) => {
+  const handleViewIncidentModal = (incident: IncidentDomain) => {
     handleViewIncident(incident);
   };
 
   // NUEVO: Manejador de edición que permite a técnicos y administradores
-  const handleEditIncidentModal = async (incident: Incident) => {
+  const handleEditIncidentModal = async (incident: IncidentDomain) => {
     try {
       await handleEditIncident(incident);
     } catch (error) {
