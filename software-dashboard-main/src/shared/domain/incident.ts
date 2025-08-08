@@ -17,6 +17,8 @@ export interface IncidentDomain {
   estimatedResolutionDate?: string | null
   affectedAreaName?: string | null
   creatorName?: string | null
+  assigneeName?: string | null
+  timeRemaining?: string | null
 }
 
 export interface IncidentMetricsDomain {

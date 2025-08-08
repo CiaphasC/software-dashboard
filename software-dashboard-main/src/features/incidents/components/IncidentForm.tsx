@@ -213,10 +213,32 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
 
   const loadUsers = async () => {
     try {
-      const usersData = await edgeFunctionsService.getUsers();
-      setUsers(usersData);
+      const usersResponse = await edgeFunctionsService.listUsers();
+      const usersData = usersResponse.items;
+      
+      // Asegurar que el usuario actual esté en la lista
+      const currentUserInList = usersData.find((u: any) => u.id === user?.id);
+      if (user && !currentUserInList) {
+        setUsers([...usersData, {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role_name: user.role
+        }]);
+      } else {
+        setUsers(usersData);
+      }
     } catch (error) {
       console.error('Error loading users:', error);
+      // Si falla la carga, al menos incluir al usuario actual
+      if (user) {
+        setUsers([{
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role_name: user.role
+        }]);
+      }
     }
   };
 
@@ -246,8 +268,21 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
   };
 
   const getSelectedUserLabel = () => {
-    const selectedUser = users.find(user => user.id === watch('assignedTo'));
-    return selectedUser ? `${selectedUser.name} (${selectedUser.role_name})` : '';
+    const assignedTo = watch('assignedTo');
+    if (!assignedTo) return '';
+    
+    // Buscar en el array de usuarios cargados
+    const selectedUser = users.find(user => user.id === assignedTo);
+    if (selectedUser) {
+      return `${selectedUser.name} (${selectedUser.role_name})`;
+    }
+    
+    // Si no se encuentra en el array pero tenemos el usuario actual y coincide
+    if (user && user.id === assignedTo) {
+      return `${user.name} (Usuario actual)`;
+    }
+    
+    return '';
   };
 
   const handleTypeSelect = (type: string) => {

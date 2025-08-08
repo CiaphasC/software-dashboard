@@ -17,21 +17,22 @@ import {
   Building2
 } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/Badge';
-import { Incident, IncidentType, IncidentStatus, Priority } from '@/shared/types/common.types';
+import { IncidentType, IncidentStatus, Priority } from '@/shared/types/common.types';
 import { getStatusColor, getPriorityColor, getStatusText, getPriorityText } from '@/shared/utils/utils';
-import { formatDate } from '@/shared/utils/dateUtils';
+import { formatDate, formatDateTime } from '@/shared/utils/dateUtils';
 import { GenericTable, type TableConfig, type TableItem } from '@/shared/components/ui/GenericTable';
+import type { IncidentDomain } from '@/shared/domain/incident';
 
-// Extender TableItem para Incident
-type IncidentTableItem = TableItem & Incident;
+// Extender TableItem para IncidentDomain
+type IncidentTableItem = TableItem & IncidentDomain;
 
 interface IncidentsTableProps {
-  incidents: Incident[];
+  incidents: IncidentDomain[];
   loading: boolean;
-  onIncidentClick: (incident: Incident) => void;
-  onEditIncident: (incident: Incident) => void;
-  onDeleteIncident: (incident: Incident) => void;
-  onViewIncident: (incident: Incident) => void;
+  onIncidentClick: (incident: IncidentDomain) => void;
+  onEditIncident: (incident: IncidentDomain) => void;
+  onDeleteIncident: (incident: IncidentDomain) => void;
+  onViewIncident: (incident: IncidentDomain) => void;
 }
 
 export const IncidentsTable: React.FC<IncidentsTableProps> = ({
@@ -71,11 +72,11 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <div className="flex items-center gap-1 p-0.5 bg-orange-50/80 rounded max-w-[120px]">
                         <MapPin className="h-3 w-3 text-orange-600 flex-shrink-0" />
-                        <span className="font-medium text-xs truncate">{incident.affected_area_name || 'Sin asignar'}</span>
+                        <span className="font-medium text-xs truncate">{incident.affectedAreaName || 'Sin asignar'}</span>
                       </div>
                       <div className="flex items-center gap-1 p-0.5 bg-blue-50/80 rounded max-w-[100px]">
                         <User className="h-3 w-3 text-blue-600 flex-shrink-0" />
-                        <span className="font-medium text-xs truncate">{incident.creator_name || 'Sin asignar'}</span>
+                        <span className="font-medium text-xs truncate">{incident.creatorName || 'Sin asignar'}</span>
                       </div>
                     </div>
                   </div>
@@ -93,10 +94,10 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
                       >
                         {getStatusText(incident.status)}
                       </Badge>
-                    {incident.estimated_resolution_date && (
+                    {incident.estimatedResolutionDate && (
                       <div className="text-xs text-gray-500 flex items-center gap-1 p-1.5 bg-orange-50/80 rounded-lg">
                         <Calendar className="h-3 w-3 text-orange-600" />
-                <span className="font-medium">{formatDate(incident.estimated_resolution_date)}</span>
+                <span className="font-medium">{formatDate(incident.estimatedResolutionDate)}</span>
                       </div>
                     )}
                   </div>
@@ -116,7 +117,7 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
                       </Badge>
                     <div className="text-xs text-gray-500 flex items-center gap-1 p-1.5 bg-purple-50/80 rounded-lg">
                       <Clock className="h-3 w-3 text-purple-600" />
-                      <span className="font-medium">{incident.time_remaining || 'Sin fecha'}</span>
+                      <span className="font-medium">{formatDateTime(incident.createdAt)}</span>
                     </div>
                   </div>
         ),
@@ -147,7 +148,7 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
         },
       },
       {
-        key: 'affected_area_name',
+        key: 'affectedAreaName',
         label: 'Área Afectada',
         icon: <MapPin className="h-4 w-4" />,
         render: (incident) => (
@@ -156,22 +157,22 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
                       <MapPin className="h-4 w-4 text-orange-600" />
             </div>
                     <div className="max-w-[120px]">
-                      <span className="text-sm font-bold text-gray-700 truncate block">{incident.affected_area_name || 'Sin asignar'}</span>
+                      <span className="text-sm font-bold text-gray-700 truncate block">{incident.affectedAreaName || 'Sin asignar'}</span>
                       <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                         <User className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate">{incident.assignee_name || 'Sin asignar'}</span>
+                        <span className="truncate">{incident.assigneeName || 'Sin asignar'}</span>
                       </div>
                     </div>
                   </div>
         ),
       },
       {
-        key: 'created_at',
+        key: 'createdAt',
         label: 'Fecha',
         icon: <Calendar className="h-4 w-4" />,
         render: (incident) => (
                   <div className="text-sm text-gray-500 p-1 bg-gray-50/80 rounded-lg">
-            {formatDate(incident.created_at)}
+            {formatDateTime(incident.createdAt)}
                   </div>
         ),
       },
@@ -223,19 +224,19 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
     // Campos adicionales específicos para incidencias
     additionalFields: [
       {
-        key: 'affected_area_name',
+        key: 'affectedAreaName',
         label: 'Área Afectada',
         icon: <MapPin className="h-4 w-4" />,
       },
       {
-        key: 'creator_name',
+        key: 'creatorName',
         label: 'Reportado por',
         icon: <User className="h-4 w-4" />,
       },
     ],
     
     // Campo de fecha estimada
-    estimatedDateField: 'estimated_resolution_date',
+    estimatedDateField: 'estimatedResolutionDate',
     
     // Textos específicos para incidencias
     texts: {

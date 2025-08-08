@@ -34,6 +34,8 @@ function mapToDomain(i: IncidentWithTimes): IncidentDomain {
     estimatedResolutionDate: (i as any).estimated_resolution_date ?? null,
     affectedAreaName: (i as any).affected_area_name ?? null,
     creatorName: (i as any).creator_name ?? null,
+    assigneeName: (i as any).assignee_name ?? null,
+    timeRemaining: (i as any).time_remaining ?? null,
   }
 }
 
