@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -36,12 +37,12 @@ export interface ModalProps {
 // ============================================================================
 
 const MODAL_SIZES = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  '2xl': 'max-w-3xl mx-4 sm:mx-6',
-  full: 'max-w-4xl mx-4 sm:mx-8 md:mx-auto'
+  sm: 'max-w-sm mx-2 sm:mx-4',
+  md: 'max-w-md mx-2 sm:mx-4',
+  lg: 'max-w-lg mx-2 sm:mx-4',
+  xl: 'max-w-xl mx-2 sm:mx-4',
+  '2xl': 'max-w-3xl mx-2 sm:mx-4',
+  full: 'max-w-4xl mx-2 sm:mx-4 md:mx-auto'
 } as const;
 
 const MODAL_ANIMATIONS = {
@@ -93,7 +94,7 @@ export const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   className = '',
   contentClassName = '',
-  zIndex = 50,
+  zIndex = 9999,
   animation = 'scale',
   animationDuration = 300
 }) => {
@@ -117,34 +118,35 @@ export const Modal: React.FC<ModalProps> = ({
   // RENDER
   // ============================================================================
 
-  return (
+  if (!isOpen) return null;
+
+  return createPortal(
     <AnimatePresence>
-      {isOpen && (
+      <motion.div
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm"
+        onClick={handleOverlayClick}
+        onKeyDown={handleKeyDown}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: animationDuration / 1000 }}
+        style={{ zIndex: 9999 }}
+      >
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          onClick={handleOverlayClick}
-          onKeyDown={handleKeyDown}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          className={`w-full ${MODAL_SIZES[size]} overflow-hidden ${contentClassName}`}
+          variants={MODAL_ANIMATIONS[animation]}
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
           transition={{ duration: animationDuration / 1000 }}
-          style={{ zIndex }}
         >
-          <motion.div
-            className={`w-full ${MODAL_SIZES[size]} max-h-[85vh] sm:max-h-[90vh] overflow-hidden ${contentClassName}`}
-            variants={MODAL_ANIMATIONS[animation]}
-            initial="hidden"
-            animate="visible"
-            exit="hidden"
-            transition={{ duration: animationDuration / 1000 }}
-          >
-            <div className={`relative ${className}`}>
-              {children}
-            </div>
-          </motion.div>
+          <div className={`relative ${className}`}>
+            {children}
+          </div>
         </motion.div>
-      )}
-    </AnimatePresence>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
   );
 };
 

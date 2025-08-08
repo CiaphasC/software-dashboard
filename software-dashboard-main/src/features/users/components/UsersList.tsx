@@ -52,10 +52,11 @@ interface UsersListProps {
 
 const getRoleColor = (role: string) => {
   switch (role) {
-    case 'admin': return 'bg-red-100 text-red-800';
-    case 'technician': return 'bg-blue-100 text-blue-800';
-    case 'requester': return 'bg-green-100 text-green-800';
-    default: return 'bg-gray-100 text-gray-800';
+    case 'admin': return 'bg-gradient-to-r from-red-500 to-rose-600 shadow-lg';
+    case 'technician': return 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg';
+    case 'requester': return 'bg-gradient-to-r from-emerald-500 to-teal-600 shadow-lg';
+    case 'user': return 'bg-gradient-to-r from-slate-500 to-gray-600 shadow-lg';
+    default: return 'bg-gradient-to-r from-gray-500 to-slate-600 shadow-lg';
   }
 };
 
@@ -111,7 +112,7 @@ export const UsersList: React.FC<UsersListProps> = ({
                            user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            user.department.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+      const matchesRole = roleFilter === '' || roleFilter === 'all' || user.role === roleFilter;
       
       return matchesSearch && matchesRole;
     });
@@ -129,102 +130,84 @@ export const UsersList: React.FC<UsersListProps> = ({
       whileHover={{ scale: 1.02 }}
     >
       <UserCard
-        user={user}
-        onView={() => {}} // Función vacía por ahora
-        onEdit={onEdit}
-        onDelete={(user) => onDelete(user.id)}
-      />
+      user={user}
+      onView={() => {}} // Función vacía por ahora
+      onEdit={onEdit}
+      onDelete={(user) => onDelete(user.id)}
+    />
     </motion.div>
   );
 
   const renderUserTable = () => (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm text-left">
-        <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <table className="w-full">
+        <thead className="bg-gray-50">
           <tr>
-            <th className="px-3 sm:px-6 py-3 font-bold text-gray-900">Usuario</th>
-            <th className="hidden sm:table-cell px-3 sm:px-6 py-3 font-bold text-gray-900">Rol</th>
-            <th className="hidden md:table-cell px-3 sm:px-6 py-3 font-bold text-gray-900">Departamento</th>
-            <th className="hidden lg:table-cell px-3 sm:px-6 py-3 font-bold text-gray-900">Estado</th>
-            <th className="hidden xl:table-cell px-3 sm:px-6 py-3 font-bold text-gray-900">Último Login</th>
-            {isAdmin && <th className="px-3 sm:px-6 py-3 font-bold text-gray-900">Acciones</th>}
+            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Usuario</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Rol</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Departamento</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Estado</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Último Acceso</th>
+            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">Acciones</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-gray-100">
           {filteredUsers.map((user, index) => (
-            <motion.tr
-              key={user.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white border-b border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-300"
-            >
-              <td className="px-3 sm:px-6 py-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+            <tr key={user.id} className="hover:bg-gray-50/50 transition-colors duration-200">
+              <td className="px-6 py-4">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-gray-900 truncate">{user.name}</div>
-                    <div className="text-xs sm:text-sm text-gray-500 truncate">{user.email}</div>
-                    {/* Información adicional en móvil */}
-                    <div className="sm:hidden mt-1">
-                      <Badge className={`${getRoleColor(user.role)} px-2 py-1 rounded-full text-xs`}>
-                        {getRoleText(user.role)}
-                      </Badge>
-                    </div>
+                  <div>
+                    <div className="font-bold text-gray-900">{user.name}</div>
+                    <div className="text-sm text-gray-600">{user.email}</div>
                   </div>
                 </div>
               </td>
-              <td className="hidden sm:table-cell px-3 sm:px-6 py-4">
-                <Badge className={`${getRoleColor(user.role)} px-3 py-1 rounded-full font-medium`}>
+              <td className="px-6 py-4">
+                <Badge className={`${getRoleColor(user.role)} text-white border-0 px-3 py-1 text-sm font-medium rounded-lg`}>
                   {getRoleText(user.role)}
                 </Badge>
               </td>
-              <td className="hidden md:table-cell px-3 sm:px-6 py-4">
-                <span className="font-medium text-gray-900">{user.department}</span>
+              <td className="px-6 py-4">
+                <span className="text-sm font-medium text-gray-900">{user.department}</span>
               </td>
-              <td className="hidden lg:table-cell px-3 sm:px-6 py-4">
+              <td className="px-6 py-4">
                 <div className="flex items-center space-x-2">
-                  <Badge variant={getSessionStatusColor(getUserSessionStatus(user))} className="text-xs px-2 py-1 rounded-full">
+                  <Badge variant={getSessionStatusColor(getUserSessionStatus(user))} className="text-sm font-medium rounded-lg">
                     {getSessionStatusText(getUserSessionStatus(user))}
                   </Badge>
-                  <span className="text-xs text-gray-500">
-                    {user.isActive ? 'Activo' : 'Inactivo'}
-                  </span>
+                  <span className="text-sm text-gray-600">Activo</span>
                 </div>
               </td>
-              <td className="hidden xl:table-cell px-3 sm:px-6 py-4">
+              <td className="px-6 py-4">
                 <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600 font-medium">
-                    {formatLastLoginTime(user.lastLoginAt)}
-                  </span>
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">{formatLastLoginTime(user.lastLoginAt)}</span>
                 </div>
               </td>
-              {isAdmin && (
-                <td className="px-3 sm:px-6 py-4">
-                  <div className="flex items-center space-x-1 sm:space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onEdit(user)}
-                      className="bg-white hover:bg-blue-50 border-blue-200 hover:border-blue-300 text-blue-700 hover:text-blue-800 transition-all duration-200 p-1 sm:p-2"
-                    >
-                      <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onDelete(user.id)}
-                      className="bg-white hover:bg-red-50 border-red-200 hover:border-red-300 text-red-600 hover:text-red-700 transition-all duration-200 p-1 sm:p-2"
-                    >
-                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </Button>
-                  </div>
-                </td>
-              )}
-            </motion.tr>
+              <td className="px-6 py-4">
+                <div className="flex items-center justify-center space-x-2">
+                  <Button
+                    onClick={() => onEdit(user)}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0 border-blue-300 text-blue-600 hover:bg-blue-50"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => onDelete(user.id)}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0 border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </td>
+            </tr>
           ))}
         </tbody>
       </table>
@@ -245,41 +228,63 @@ export const UsersList: React.FC<UsersListProps> = ({
 
   return (
     <div className="space-y-6">
-
-
       {/* Contenido */}
-      <AnimatePresence mode="wait">
-        {viewMode === 'cards' ? (
+      <AnimatePresence mode="sync">
+        {/* Vista de tabla - Solo visible en pantallas xl y superiores */}
+        {viewMode === 'table' && filteredUsers.length > 0 && (
           <motion.div
-            key="cards"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 p-4"
+            key="table"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.4 }}
+            className="hidden xl:block"
+          >
+            {renderUserTable()}
+          </motion.div>
+        )}
+
+        {/* Vista de tarjetas para pantallas grandes */}
+        {viewMode === 'cards' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="hidden xl:grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 p-6 w-full"
           >
             {filteredUsers.map((user, index) => (
               <motion.div
                 key={user.id}
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
+                transition={{ delay: index * 0.05, duration: 0.4 }}
+                className="w-full h-full"
               >
                 {renderUserCard(user)}
               </motion.div>
             ))}
           </motion.div>
-        ) : (
-          <motion.div
-            key="table"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
-          >
-            {renderUserTable()}
-          </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Vista móvil siempre en tarjetas - Visible en pantallas menores a xl */}
+      {filteredUsers.length > 0 && (
+        <div className="xl:hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 w-full">
+            {filteredUsers.map((user, index) => (
+              <motion.div
+                key={user.id}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: index * 0.05, duration: 0.4 }}
+                className="w-full h-full"
+              >
+                {renderUserCard(user)}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Estado vacío */}
       {filteredUsers.length === 0 && (
@@ -294,7 +299,7 @@ export const UsersList: React.FC<UsersListProps> = ({
           </div>
           <h3 className="text-xl font-semibold text-gray-700 mb-2">No se encontraron usuarios</h3>
           <p className="text-gray-500 max-w-md mx-auto">
-            {searchQuery || roleFilter !== 'all' 
+            {searchQuery || (roleFilter !== '' && roleFilter !== 'all')
               ? 'Intenta ajustar los filtros de búsqueda para encontrar más resultados.'
               : 'No hay usuarios registrados en el sistema.'
             }

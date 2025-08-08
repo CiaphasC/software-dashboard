@@ -45,30 +45,67 @@ serve(async (req) => {
       throw new Error('Solo administradores y técnicos pueden cambiar estados')
     }
 
-    // Actualizar estado usando la función de la base de datos
-    const { data, error } = await supabase.rpc('update_requirement_status', {
-      p_requirement_id: requirement_id,
-      p_new_status: new_status,
-      p_delivered_at: delivered_at,
-      p_user_id: user.id
-    })
+    // Preparar datos de actualización según el estado
+    const updateData: any = {
+      status: new_status,
+      last_modified_by: user.id,
+      last_modified_at: new Date().toISOString()
+    };
+
+    // Lógica especial para estados finales
+    if (new_status === 'delivered' || new_status === 'closed' || new_status === 'completed') {
+      // ✅ Estados finales: delivered, closed, completed - establecer delivered_at
+      updateData.delivered_at = delivered_at || new Date().toISOString();
+    }
+
+    // Actualizar requerimiento directamente
+    const { data, error } = await supabase
+      .from('requirements')
+      .update(updateData)
+      .eq('id', requirement_id)
+      .select()
+      .single()
 
     if (error) throw error
+
+    // Registrar actividad
+    await supabase.rpc('log_activity', {
+      p_user_id: user.id,
+      p_action: 'requirement_status_changed',
+      p_details: JSON.stringify({
+        requirement_id,
+        previous_status: data.status,
+        new_status: new_status,
+        delivered_at: updateData.delivered_at
+      })
+    })
 
     // Enviar notificación en tiempo real
     await supabase.channel('requirements')
       .send({
         type: 'broadcast',
         event: 'requirement_status_updated',
-        payload: { requirement_id, new_status, updated_by: user.id }
+        payload: { 
+          requirement_id, 
+          new_status, 
+          updated_by: user.id,
+          delivered_at: updateData.delivered_at
+        }
       })
 
-    return new Response(JSON.stringify({ success: true, data }), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      data,
+      message: `Requerimiento marcado como ${new_status === 'delivered' ? 'entregado' : new_status === 'completed' ? 'completado' : 'cerrado'}`
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: error.message 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })

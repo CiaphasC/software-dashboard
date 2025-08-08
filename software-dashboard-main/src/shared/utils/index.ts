@@ -1,3 +1,7 @@
+export * from './utils'
+export * from './dateUtils'
+// TODO: agregar formatters centralizados cuando se creen
+
 // =============================================================================
 // UTILS INDEX - Exportaciones centralizadas de utilidades
 // Arquitectura de Software Profesional - Barrel Exports

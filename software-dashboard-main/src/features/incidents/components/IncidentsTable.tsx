@@ -20,7 +20,10 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { Incident, IncidentType, IncidentStatus, Priority } from '@/shared/types/common.types';
 import { getStatusColor, getPriorityColor, getStatusText, getPriorityText } from '@/shared/utils/utils';
 import { formatDate } from '@/shared/utils/dateUtils';
-import { GenericTable, type TableConfig } from '@/shared/components/ui/GenericTable';
+import { GenericTable, type TableConfig, type TableItem } from '@/shared/components/ui/GenericTable';
+
+// Extender TableItem para Incident
+type IncidentTableItem = TableItem & Incident;
 
 interface IncidentsTableProps {
   incidents: Incident[];
@@ -40,7 +43,7 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
   onViewIncident
 }) => {
   // Configuración específica para incidencias
-  const config: TableConfig<Incident> = {
+  const config: TableConfig<IncidentTableItem> = {
     // Tema naranja/rojo para incidencias
     theme: {
       primaryColor: 'orange',
@@ -59,20 +62,20 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
         icon: <AlertTriangle className="h-4 w-4" />,
         render: (incident) => (
                   <div className="space-y-0.5">
-                    <div className="font-bold text-gray-900 group-hover:text-orange-700 transition-colors text-base">
+                    <div className="font-bold text-gray-900 group-hover:text-orange-700 transition-colors text-sm max-w-[180px] truncate">
                       {incident.title}
                     </div>
-                    <div className="text-sm text-gray-600 line-clamp-2 leading-relaxed max-w-sm">
+                    <div className="text-xs text-gray-600 line-clamp-1 leading-tight max-w-[200px]">
                       {incident.description}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <div className="flex items-center gap-1 p-1 bg-orange-50/80 rounded-lg">
-                        <MapPin className="h-3 w-3 text-orange-600" />
-                        <span className="font-medium">{incident.affectedArea}</span>
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <div className="flex items-center gap-1 p-0.5 bg-orange-50/80 rounded max-w-[120px]">
+                        <MapPin className="h-3 w-3 text-orange-600 flex-shrink-0" />
+                        <span className="font-medium text-xs truncate">{incident.affected_area_name || 'Sin asignar'}</span>
                       </div>
-                      <div className="flex items-center gap-1 p-1 bg-blue-50/80 rounded-lg">
-                        <User className="h-3 w-3 text-blue-600" />
-                        <span className="font-medium">{incident.createdBy}</span>
+                      <div className="flex items-center gap-1 p-0.5 bg-blue-50/80 rounded max-w-[100px]">
+                        <User className="h-3 w-3 text-blue-600 flex-shrink-0" />
+                        <span className="font-medium text-xs truncate">{incident.creator_name || 'Sin asignar'}</span>
                       </div>
                     </div>
                   </div>
@@ -90,10 +93,10 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
                       >
                         {getStatusText(incident.status)}
                       </Badge>
-                    {incident.estimatedResolutionDate && (
+                    {incident.estimated_resolution_date && (
                       <div className="text-xs text-gray-500 flex items-center gap-1 p-1.5 bg-orange-50/80 rounded-lg">
                         <Calendar className="h-3 w-3 text-orange-600" />
-                <span className="font-medium">{formatDate(incident.estimatedResolutionDate)}</span>
+                <span className="font-medium">{formatDate(incident.estimated_resolution_date)}</span>
                       </div>
                     )}
                   </div>
@@ -113,7 +116,7 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
                       </Badge>
                     <div className="text-xs text-gray-500 flex items-center gap-1 p-1.5 bg-purple-50/80 rounded-lg">
                       <Clock className="h-3 w-3 text-purple-600" />
-              <span className="font-medium">{formatDate(incident.createdAt)}</span>
+                      <span className="font-medium">{incident.time_remaining || 'Sin fecha'}</span>
                     </div>
                   </div>
         ),
@@ -144,7 +147,7 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
         },
       },
       {
-        key: 'affectedArea',
+        key: 'affected_area_name',
         label: 'Área Afectada',
         icon: <MapPin className="h-4 w-4" />,
         render: (incident) => (
@@ -152,23 +155,23 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
             <div className="p-2 rounded-xl bg-gradient-to-br from-orange-100 to-red-100 shadow-lg border border-orange-200/50">
                       <MapPin className="h-4 w-4 text-orange-600" />
             </div>
-                    <div>
-                      <span className="text-sm font-bold text-gray-700">{incident.affectedArea}</span>
+                    <div className="max-w-[120px]">
+                      <span className="text-sm font-bold text-gray-700 truncate block">{incident.affected_area_name || 'Sin asignar'}</span>
                       <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                        <User className="h-3 w-3" />
-                        <span>{incident.assignedTo || 'Sin asignar'}</span>
+                        <User className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{incident.assignee_name || 'Sin asignar'}</span>
                       </div>
                     </div>
                   </div>
         ),
       },
       {
-        key: 'createdAt',
+        key: 'created_at',
         label: 'Fecha',
         icon: <Calendar className="h-4 w-4" />,
         render: (incident) => (
                   <div className="text-sm text-gray-500 p-1 bg-gray-50/80 rounded-lg">
-            {formatDate(incident.createdAt)}
+            {formatDate(incident.created_at)}
                   </div>
         ),
       },
@@ -220,19 +223,19 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
     // Campos adicionales específicos para incidencias
     additionalFields: [
       {
-        key: 'affectedArea',
+        key: 'affected_area_name',
         label: 'Área Afectada',
         icon: <MapPin className="h-4 w-4" />,
       },
       {
-        key: 'createdBy',
-        label: 'Creado por',
+        key: 'creator_name',
+        label: 'Reportado por',
         icon: <User className="h-4 w-4" />,
       },
     ],
     
     // Campo de fecha estimada
-    estimatedDateField: 'estimatedResolutionDate',
+    estimatedDateField: 'estimated_resolution_date',
     
     // Textos específicos para incidencias
     texts: {
@@ -252,9 +255,9 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
 
   return (
     <GenericTable
-      items={incidents}
+      items={incidents as any}
       loading={loading}
-      config={config}
+      config={config as any}
     />
   );
 }; 

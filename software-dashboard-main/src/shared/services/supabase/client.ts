@@ -20,36 +20,73 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // =============================================================================
+// SUPABASE CLIENT MANAGER - Gestor de clientes de Supabase
+// =============================================================================
+
+class SupabaseClientManager {
+  private static instance: SupabaseClientManager;
+  private supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
+  private supabaseAdminClient: ReturnType<typeof createClient<Database>> | null = null;
+
+  private constructor() {
+    console.log('🔧 SupabaseClientManager: Instancia creada');
+  }
+
+  static getInstance(): SupabaseClientManager {
+    if (!SupabaseClientManager.instance) {
+      SupabaseClientManager.instance = new SupabaseClientManager();
+    }
+    return SupabaseClientManager.instance;
+  }
+
+  getSupabaseClient(): ReturnType<typeof createClient<Database>> {
+    if (!this.supabaseClient) {
+      console.log('🔧 SupabaseClientManager: Creando cliente Supabase');
+      this.supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true,
+          storageKey: 'estable1-auth-token'
+        },
+        realtime: {
+          params: {
+            eventsPerSecond: 10
+          }
+        }
+      });
+    }
+    return this.supabaseClient;
+  }
+
+  getSupabaseAdminClient(): ReturnType<typeof createClient<Database>> | null {
+    if (!supabaseServiceKey) return null;
+    
+    if (!this.supabaseAdminClient) {
+      console.log('🔧 SupabaseClientManager: Creando cliente Admin Supabase');
+      this.supabaseAdminClient = createClient<Database>(supabaseUrl, supabaseServiceKey, {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: false,
+          detectSessionInUrl: false
+        }
+      });
+    }
+    return this.supabaseAdminClient;
+  }
+}
+
+// =============================================================================
 // SUPABASE CLIENT - Cliente tipado de Supabase (Anon Key)
 // =============================================================================
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    storageKey: 'estable1-auth-token'
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
-  }
-})
+export const supabase = SupabaseClientManager.getInstance().getSupabaseClient();
 
 // =============================================================================
 // SUPABASE ADMIN CLIENT - Cliente con permisos de servicio (Service Role Key)
 // =============================================================================
 
-export const supabaseAdmin = supabaseServiceKey 
-  ? createClient<Database>(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: false,
-        detectSessionInUrl: false
-      }
-    })
-  : null
+export const supabaseAdmin = SupabaseClientManager.getInstance().getSupabaseAdminClient();
 
 // =============================================================================
 // CONNECTION MANAGER - Gestor de conexión

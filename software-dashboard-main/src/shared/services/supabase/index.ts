@@ -1,22 +1,8 @@
 // =============================================================================
 // SUPABASE SERVICES INDEX - Índice principal de servicios de Supabase
-// Arquitectura de Software Profesional - Exportaciones de Servicios
 // =============================================================================
 
-// =============================================================================
-// CLIENT EXPORTS - Exportaciones del cliente
-// =============================================================================
-
-export { 
-  supabase, 
-  connectionManager, 
-  realtimeManager, 
-  edgeFunctions 
-} from './client'
-
-// =============================================================================
-// TYPES EXPORTS - Exportaciones de tipos
-// =============================================================================
+export { supabase, connectionManager, realtimeManager, edgeFunctions } from './client'
 
 export type {
   Database,
@@ -48,34 +34,17 @@ export type {
   QueryParams
 } from './types'
 
-// =============================================================================
-// AUTH SERVICE EXPORTS - Exportaciones del servicio de autenticación
-// =============================================================================
+export { authService, AuthService } from './auth'
+export type { AuthUser, LoginCredentials, RegisterData, CreateUserData, UpdateUserData } from './auth'
 
-export { 
-  authService,
-  AuthService 
-} from './auth'
+export { dataService, DataService } from './data'
+export type { IncidentFilters, RequirementFilters, DashboardMetrics } from './data'
 
+export { edgeFunctionsService, EdgeFunctionsService } from './edgeFunctionsService'
 export type {
-  AuthUser,
-  LoginCredentials,
-  RegisterData,
-  CreateUserData,
-  UpdateUserData
-} from './auth'
-
-// =============================================================================
-// DATA SERVICE EXPORTS - Exportaciones del servicio de datos
-// =============================================================================
-
-export { 
-  dataService,
-  DataService 
-} from './data'
-
-export type {
-  IncidentFilters,
-  RequirementFilters,
-  DashboardMetrics
-} from './data' 
+  EdgeFunctionResponse,
+  CreateIncidentData,
+  UpdateIncidentData,
+  CreateRequirementData,
+  UpdateRequirementData
+} from './edgeFunctionsService' 

@@ -167,7 +167,7 @@ export const transformIncidentForForm = (incident: any) => {
     status: incident.status,
     affectedArea: incident.affected_area_id?.toString() || '',
     assignedTo: incident.assigned_to || '',
-    estimatedResolutionDate: incident.estimated_resolution_date || '',
+    // REMOVER estimatedResolutionDate - se usará created_at automático
   };
 };
 
@@ -175,16 +175,31 @@ export const transformIncidentForForm = (incident: any) => {
  * Convierte datos del formulario al formato de Supabase
  */
 export const transformFormDataForSupabase = (formData: any) => {
-  return {
+  console.log('🔍 transformFormDataForSupabase - formData recibido:', formData);
+  console.log('🔍 transformFormDataForSupabase - affectedArea:', formData.affectedArea);
+  console.log('🔍 transformFormDataForSupabase - affectedArea type:', typeof formData.affectedArea);
+  
+  // Validar que affectedArea no sea vacío
+  if (!formData.affectedArea || formData.affectedArea === '') {
+    console.error('🔍 transformFormDataForSupabase - ERROR: affectedArea está vacío');
+    throw new Error('El área afectada es requerida');
+  }
+  
+  const transformed = {
     title: formData.title,
     description: formData.description,
     type: formData.type,
     priority: formData.priority,
     status: formData.status,
-    affected_area_id: parseInt(formData.affectedArea, 10),
+    affected_area_id: formData.affectedArea, // Mantener como string, el edge function lo convertirá
     assigned_to: formData.assignedTo || null,
-    estimated_resolution_date: formData.estimatedResolutionDate || null,
+    // REMOVER estimated_resolution_date - se usará created_at automático
   };
+  
+  console.log('🔍 transformFormDataForSupabase - datos transformados:', transformed);
+  console.log('🔍 transformFormDataForSupabase - affected_area_id:', transformed.affected_area_id);
+  
+  return transformed;
 };
 
 /**

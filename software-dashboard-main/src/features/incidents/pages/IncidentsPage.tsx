@@ -20,17 +20,18 @@ import { Button } from '@/shared/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/Card';
 import { IncidentsFloatingParticles } from '@/shared/components/ui';
 
-import { IncidentForm } from '@/features/incidents/components/IncidentForm';
-import { useIncidentsPage } from '@/features/incidents/hooks';
+import { IncidentForm, IncidentsHeader } from '@/features/incidents/components';
+import { useIncidentsPage } from '@/features/incidents/hooks/pages/useIncidentsPage';
 import { Incident } from '@/shared/types/common.types';
 import { IncidentsTable } from '@/features/incidents/components/IncidentsTable';
 import { IncidentsFilters } from '@/features/incidents/components/IncidentsFilters';
 import { useAuthStore } from '@/shared/store';
+import { transformIncidentForForm } from '@/shared/utils/utils';
 import toast from 'react-hot-toast';
 
 // Componente de partículas flotantes - Ahora usando el componente compartido
 
-// Componente de estadísticas moderno
+// Componente de estadísticas ultra moderno con colores rojo/naranja
 const IncidentStats: React.FC<{ incidents: any[] }> = ({ incidents }) => {
   const stats = {
     total: incidents.length,
@@ -47,42 +48,47 @@ const IncidentStats: React.FC<{ incidents: any[] }> = ({ incidents }) => {
     {
       title: 'Total Incidencias',
       value: stats.total,
-      icon: <AlertTriangle className="h-5 w-5" />,
-      color: 'from-blue-500 to-cyan-500',
-      trend: '+12%',
-      trendColor: 'text-green-500'
+      icon: <BarChart3 className="h-5 w-5" />,
+      color: 'from-red-500 to-orange-500',
+      trend: '+18%',
+      trendColor: 'text-red-500',
+      bgGradient: 'from-red-50/80 to-orange-50/80'
     },
     {
       title: 'Abiertas',
       value: stats.open,
-      icon: <Clock className="h-5 w-5" />,
+      icon: <AlertTriangle className="h-5 w-5" />,
       color: 'from-orange-500 to-red-500',
-      trend: '+5%',
-      trendColor: 'text-orange-500'
+      trend: '+12%',
+      trendColor: 'text-orange-500',
+      bgGradient: 'from-orange-50/80 to-red-50/80'
     },
     {
       title: 'Pendientes',
       value: stats.pending,
       icon: <Clock className="h-5 w-5" />,
-      color: 'from-yellow-500 to-orange-500',
-      trend: '+3%',
-      trendColor: 'text-yellow-500'
+      color: 'from-amber-500 to-orange-500',
+      trend: '+5%',
+      trendColor: 'text-amber-500',
+      bgGradient: 'from-amber-50/80 to-orange-50/80'
     },
     {
       title: 'En Proceso',
       value: stats.inProgress,
       icon: <Activity className="h-5 w-5" />,
-      color: 'from-blue-500 to-indigo-500',
+      color: 'from-blue-500 to-cyan-500',
       trend: '-2%',
-      trendColor: 'text-green-500'
+      trendColor: 'text-green-500',
+      bgGradient: 'from-blue-50/80 to-cyan-50/80'
     },
     {
       title: 'Completadas',
       value: stats.completed,
       icon: <CheckCircle className="h-5 w-5" />,
       color: 'from-green-500 to-emerald-500',
-      trend: '+8%',
-      trendColor: 'text-green-500'
+      trend: '+15%',
+      trendColor: 'text-green-500',
+      bgGradient: 'from-green-50/80 to-emerald-50/80'
     },
     {
       title: 'Entregadas',
@@ -90,52 +96,96 @@ const IncidentStats: React.FC<{ incidents: any[] }> = ({ incidents }) => {
       icon: <CheckCircle className="h-5 w-5" />,
       color: 'from-emerald-500 to-teal-500',
       trend: '+6%',
-      trendColor: 'text-green-500'
+      trendColor: 'text-emerald-500',
+      bgGradient: 'from-emerald-50/80 to-teal-50/80'
     },
     {
       title: 'Urgentes',
       value: stats.urgent,
       icon: <Zap className="h-5 w-5" />,
       color: 'from-red-500 to-pink-500',
-      trend: '+3%',
-      trendColor: 'text-red-500'
+      trend: '+8%',
+      trendColor: 'text-red-500',
+      bgGradient: 'from-red-50/80 to-pink-50/80'
     },
     {
       title: 'Alta Prioridad',
       value: stats.high,
-      icon: <Shield className="h-5 w-5" />,
-      color: 'from-purple-500 to-indigo-500',
-      trend: '+7%',
-      trendColor: 'text-purple-500'
+      icon: <Crown className="h-5 w-5" />,
+      color: 'from-purple-500 to-pink-500',
+      trend: '+11%',
+      trendColor: 'text-purple-500',
+      bgGradient: 'from-purple-50/80 to-pink-50/80'
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
       {statCards.map((stat, index) => (
         <motion.div
           key={stat.title}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: index * 0.1 }}
+          initial={{ opacity: 0, y: 40, scale: 0.7 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.7, delay: index * 0.1, type: "spring", stiffness: 80 }}
+          whileHover={{ y: -12, scale: 1.08, rotateY: 5 }}
         >
-          <Card className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center justify-between">
+          <Card className="group hover:shadow-2xl transition-all duration-600 border-0 bg-white/95 backdrop-blur-xl relative overflow-hidden h-full">
+            {/* Fondo con gradiente sutil */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-600`} />
+            
+            {/* Efecto de brillo mejorado */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent opacity-0 group-hover:opacity-100"
+              animate={{
+                x: ['-100%', '100%'],
+              }}
+              transition={{
+                duration: 2.5,
+                repeat: Infinity,
+                ease: "linear",
+                delay: 0.8
+              }}
+            />
+            
+            {/* Efecto de borde brillante */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-red-400/20 via-orange-400/20 to-red-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
+            
+            <CardContent className="p-3 sm:p-4 relative z-10 h-full flex flex-col">
+              <div className="flex items-center justify-between flex-1">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 truncate">{stat.title}</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-xs sm:text-sm font-bold text-gray-600 mb-1 truncate">{stat.title}</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">{stat.value}</p>
                   <div className="flex items-center mt-1">
-                    <span className={`text-xs font-medium ${stat.trendColor}`}>
+                    <span className={`text-xs font-bold ${stat.trendColor}`}>
                       {stat.trend}
                     </span>
                     <TrendingUp className="h-3 w-3 ml-1 text-gray-400" />
                   </div>
                 </div>
-                <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br ${stat.color} text-white shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
+                <motion.div 
+                  className={`p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br ${stat.color} text-white shadow-lg group-hover:shadow-xl transition-all duration-300 flex-shrink-0`}
+                  whileHover={{ rotate: 8, scale: 1.15 }}
+                >
                   {stat.icon}
-                </div>
+                </motion.div>
               </div>
+              
+              {/* Indicador de progreso sutil mejorado */}
+              <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full bg-gradient-to-r ${stat.color} rounded-full shadow-sm`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min((stat.value / Math.max(stats.total, 1)) * 100, 100)}%` }}
+                  transition={{ duration: 1.2, delay: index * 0.1 + 0.8, ease: "easeOut" }}
+                />
+              </div>
+              
+              {/* Indicador de pulso sutil */}
+              <motion.div
+                className="absolute top-2 right-2 w-2 h-2 bg-red-400 rounded-full opacity-0 group-hover:opacity-100"
+                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
             </CardContent>
           </Card>
         </motion.div>
@@ -143,8 +193,6 @@ const IncidentStats: React.FC<{ incidents: any[] }> = ({ incidents }) => {
     </div>
   );
 };
-
-
 
 export const Incidents: React.FC = () => {
   const { user: currentUser } = useAuthStore();
@@ -157,6 +205,11 @@ export const Incidents: React.FC = () => {
     error,
     showForm,
     isSubmitting,
+    // NUEVOS ESTADOS
+    editingIncident,
+    showEditForm,
+    isReadOnly,
+    renderPermissions,
     handleFilterChange,
     handleClearFilters,
     handleCreateIncident,
@@ -166,7 +219,11 @@ export const Incidents: React.FC = () => {
     handleEditIncident,
     handleDeleteIncident,
     handleViewIncident,
+    // NUEVAS FUNCIONES
+    handleUpdateIncident,
+    closeEditForm,
     filterOptions,
+    sentinelRef,
   } = useIncidentsPage();
 
   // Manejadores simplificados
@@ -174,12 +231,13 @@ export const Incidents: React.FC = () => {
     handleViewIncident(incident);
   };
 
-  const handleEditIncidentModal = (incident: Incident) => {
-    if (!isAdmin) {
-      toast.error('Solo los administradores pueden editar incidencias');
-      return;
+  // NUEVO: Manejador de edición que permite a técnicos y administradores
+  const handleEditIncidentModal = async (incident: Incident) => {
+    try {
+      await handleEditIncident(incident);
+    } catch (error) {
+      toast.error('Error al abrir el modal de edición');
     }
-    handleEditIncident(incident);
   };
 
   if (error) {
@@ -216,62 +274,13 @@ export const Incidents: React.FC = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          {/* Header */}
-          <motion.div 
-            className="text-center py-4 sm:py-8"
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <motion.div
-              className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4 sm:mb-6"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <motion.div 
-                className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-red-500 via-orange-500 to-red-600 text-white shadow-2xl relative overflow-hidden"
-                whileHover={{ rotate: 3, scale: 1.08 }}
-                animate={{ 
-                  boxShadow: [
-                    "0 20px 40px rgba(239, 68, 68, 0.4)",
-                    "0 20px 40px rgba(249, 115, 22, 0.5)",
-                    "0 20px 40px rgba(220, 38, 38, 0.4)",
-                    "0 20px 40px rgba(239, 68, 68, 0.4)"
-                  ]
-                }}
-                transition={{ duration: 4, repeat: Infinity }}
-              >
-                <AlertTriangle className="h-8 w-8 sm:h-12 sm:w-12" />
-              </motion.div>
-              
-              <div className="text-center sm:text-left">
-                <motion.h1 
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-2 sm:mb-3"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.3 }}
-                >
-                  Gestión de{' '}
-                  <span className="bg-gradient-to-r from-red-600 via-orange-600 to-red-600 bg-clip-text text-transparent">
-                    Incidencias
-                  </span>
-                </motion.h1>
-                <motion.p 
-                  className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed px-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                >
-                  Sistema integral de gestión y seguimiento de incidencias con análisis avanzado y control estratégico
-                </motion.p>
-              </div>
-            </motion.div>
-          </motion.div>
+          {/* Header Ultra Moderno Mejorado con colores rojo/naranja */}
+          <IncidentsHeader />
 
           {/* Estadísticas */}
           <IncidentStats incidents={incidents} />
 
-          {/* Header con acciones */}
+          {/* Header con acciones mejorado */}
           <motion.div 
             className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             initial={{ opacity: 0, y: 20 }}
@@ -289,6 +298,12 @@ export const Incidents: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Crown className="h-4 w-4 text-amber-500" />
                   <span className="text-sm font-medium text-amber-600">Modo Administrador</span>
+                </div>
+              )}
+              {currentUser?.role === 'technician' && (
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-medium text-blue-600">Modo Técnico</span>
                 </div>
               )}
             </div>
@@ -346,6 +361,8 @@ export const Incidents: React.FC = () => {
                 onDeleteIncident={handleDeleteIncident}
                 onViewIncident={handleViewIncidentModal}
               />
+              {/* Sentinel para scroll infinito */}
+              <div ref={sentinelRef} className="h-8" />
             </motion.div>
           </AnimatePresence>
         </motion.div>
@@ -357,7 +374,28 @@ export const Incidents: React.FC = () => {
         onClose={closeForm}
         onSubmit={handleCreateIncident}
         loading={isSubmitting}
+        userRole={currentUser?.role}
       />
+
+      {/* NUEVO: Modal de Edición de Incidencia */}
+      {editingIncident && renderPermissions && (
+        <IncidentForm
+          isOpen={showEditForm}
+          onClose={closeEditForm}
+          onSubmit={handleUpdateIncident}
+          loading={isSubmitting}
+          initialData={transformIncidentForForm(editingIncident)}
+          isEdit={true}
+          userRole={currentUser?.role}
+          incidentStatus={editingIncident.status}
+          isReadOnly={isReadOnly}
+          // PROPS PARA RENDERIZADO CONTROLADO POR SERVIDOR
+          allowedFields={renderPermissions.allowedFields}
+          canEditStatus={renderPermissions.canEditStatus}
+          canEditArea={renderPermissions.canEditArea}
+          canEditContent={renderPermissions.canEditContent}
+        />
+      )}
     </div>
   );
 };

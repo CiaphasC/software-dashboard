@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { supabase } from './client'
+import { edgeFunctionsService } from './edgeFunctionsService'
 import type { 
   Incident,
   Requirement,
@@ -11,7 +12,7 @@ import type {
   RecentActivity,
   Notification,
   Report,
-  IncidentWithUsers,
+  IncidentWithTimes,
   RequirementWithUsers,
   ActivityWithUser,
   Inserts,
@@ -73,60 +74,25 @@ export class DataService {
    * Obtener incidencias con filtros y paginación
    */
   async getIncidents(params?: QueryParams & { filters?: IncidentFilters }): Promise<{
-    data: IncidentWithUsers[]
+    data: IncidentWithTimes[]
     total: number
     error?: string
   }> {
     try {
-      let query = supabase
-        .from('incidents_with_times')
-        .select('*', { count: 'exact' })
+      const page = params?.page ?? 1
+      const limit = params?.limit ?? 10
+      const search = params?.search
+      const filters = params?.filters
 
-      // Aplicar filtros
-      if (params?.filters) {
-        const filters = params.filters
-        if (filters.status) query = query.eq('status', filters.status)
-        if (filters.priority) query = query.eq('priority', filters.priority)
-        if (filters.type) query = query.eq('type', filters.type)
-        if (filters.assignedTo) query = query.eq('assigned_to', filters.assignedTo)
-        if (filters.createdBy) query = query.eq('created_by', filters.createdBy)
-        if (filters.department) query = query.eq('affected_area_name', filters.department)
-        if (filters.dateFrom) query = query.gte('created_at', filters.dateFrom)
-        if (filters.dateTo) query = query.lte('created_at', filters.dateTo)
-      }
-
-      // Aplicar búsqueda
-      if (params?.search) {
-        query = query.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%`)
-      }
-
-      // Aplicar ordenamiento
-      if (params?.sort) {
-        query = query.order(params.sort.column, { 
-          ascending: params.sort.direction === 'asc' 
-        })
-      } else {
-        query = query.order('created_at', { ascending: false })
-      }
-
-      // Aplicar paginación
-      if (params?.page && params?.limit) {
-        const offset = (params.page - 1) * params.limit
-        query = query.range(offset, offset + params.limit - 1)
-      }
-
-      const { data, error, count } = await query
-
-      if (error) {
-        throw new Error(error.message)
-      }
+      // Delegar la mayor carga al backend (Edge Function)
+      const result = await edgeFunctionsService.listIncidents({ page, limit, search, filters })
 
       return {
-        data: data || [],
-        total: count || 0
+        data: (result.items || []) as IncidentWithTimes[],
+        total: result.total || 0
       }
     } catch (error) {
-      console.error('❌ Error obteniendo incidencias:', error)
+      console.error('❌ Error obteniendo incidencias (edge):', error)
       return {
         data: [],
         total: 0,
@@ -138,7 +104,7 @@ export class DataService {
   /**
    * Obtener incidencia por ID
    */
-  async getIncident(id: string): Promise<IncidentWithUsers | null> {
+  async getIncident(id: string): Promise<IncidentWithTimes | null> {
     try {
       const { data, error } = await supabase
         .from('incidents_with_times')
@@ -429,6 +395,29 @@ export class DataService {
     }
   }
 
+  /**
+   * Obtener usuarios activos para asignación
+   */
+  async getUsers(): Promise<Array<{ id: string; name: string; email: string; role_name: string }>> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, email, role_name')
+        .eq('is_active', true)
+        .order('name')
+
+      if (error) {
+        console.error('❌ Error en consulta de usuarios:', error)
+        throw new Error(error.message)
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('❌ Error obteniendo usuarios:', error)
+      throw error
+    }
+  }
+
   // =============================================================================
   // ACTIVITIES - Gestión de actividades recientes
   // =============================================================================
@@ -665,8 +654,7 @@ export class DataService {
           pendingRegistrations: 0,
           totalUsers: 0,
           averageResolutionTime: 0,
-          topDepartments: [],
-          userActivity: 0
+          topDepartments: []
         }
       }
 
@@ -684,8 +672,7 @@ export class DataService {
         pendingRegistrations: metrics.pendingRegistrations || 0,
         totalUsers: metrics.totalUsers || 0,
         averageResolutionTime: metrics.averageResolutionTime || 0,
-        topDepartments: Array.isArray(metrics.topDepartments) ? metrics.topDepartments : [],
-        userActivity: metrics.userActivity || 0
+        topDepartments: Array.isArray(metrics.topDepartments) ? metrics.topDepartments : []
       }
     } catch (error) {
       console.error('❌ Error obteniendo métricas del dashboard:', error)
@@ -703,8 +690,7 @@ export class DataService {
         pendingRegistrations: 0,
         totalUsers: 0,
         averageResolutionTime: 0,
-        topDepartments: [],
-        userActivity: 0
+        topDepartments: []
       }
     }
   }

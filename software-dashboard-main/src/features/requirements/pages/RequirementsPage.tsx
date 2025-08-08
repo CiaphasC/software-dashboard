@@ -25,6 +25,7 @@ import { Requirement, RequirementStatus, Priority } from '@/shared/types/common.
 import RequirementForm from '@/features/requirements/components/RequirementForm';
 import RequirementsFilters from '@/features/requirements/components/RequirementsFilters';
 import RequirementsTable from '@/features/requirements/components/RequirementsTable';
+import { RequirementsHeader } from '@/features/requirements/components';
 import { useAuthStore } from '@/shared/store';
 import toast from 'react-hot-toast';
 
@@ -246,97 +247,8 @@ export const RequirementsPage: React.FC = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          {/* Header Ultra Moderno Mejorado con colores verdes */}
-          <motion.div 
-            className="text-center py-4 sm:py-8"
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <motion.div
-              className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4 sm:mb-6"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <motion.div 
-                className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 text-white shadow-2xl relative overflow-hidden"
-                whileHover={{ rotate: 3, scale: 1.08 }}
-                animate={{ 
-                  boxShadow: [
-                    "0 20px 40px rgba(16, 185, 129, 0.4)",
-                    "0 20px 40px rgba(34, 197, 94, 0.5)",
-                    "0 20px 40px rgba(20, 184, 166, 0.4)",
-                    "0 20px 40px rgba(16, 185, 129, 0.4)"
-                  ]
-                }}
-                transition={{ duration: 4, repeat: Infinity }}
-              >
-                {/* Efecto de brillo mejorado */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                  animate={{
-                    x: ['-100%', '100%'],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "linear"
-                  }}
-                />
-                <FileText className="h-8 w-8 sm:h-12 sm:w-12 relative z-10" />
-                
-                {/* Partículas de brillo en el icono mejoradas */}
-                <motion.div
-                  className="absolute inset-0 flex items-center justify-center"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                >
-                  {[...Array(6)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute w-1 h-1 bg-yellow-300/80 rounded-full"
-                      style={{
-                        left: '50%',
-                        top: '50%',
-                        transform: `rotate(${i * 60}deg) translateY(-20px)`,
-                      }}
-                      animate={{
-                        opacity: [0, 1, 0],
-                        scale: [0, 1.5, 0],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        delay: i * 0.3,
-                      }}
-                    />
-                  ))}
-                </motion.div>
-              </motion.div>
-              
-              <div className="text-center sm:text-left">
-                <motion.h1 
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-2 sm:mb-3"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.3 }}
-                >
-                  Gestión de{' '}
-                  <span className="bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent">
-                    Requerimientos
-                  </span>
-                </motion.h1>
-                <motion.p 
-                  className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed px-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                >
-                  Sistema integral de gestión y seguimiento de requerimientos con análisis avanzado y control estratégico
-                </motion.p>
-              </div>
-            </motion.div>
-          </motion.div>
+          {/* Header modularizado */}
+          <RequirementsHeader />
 
           {/* Estadísticas */}
           <RequirementStats requirements={requirements} />

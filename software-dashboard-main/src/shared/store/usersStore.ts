@@ -4,9 +4,10 @@
 // =============================================================================
 
 import { create } from 'zustand';
-import { authService, dataService } from '@/shared/services/supabase';
-import { User, mapProfileToUser } from '@/shared/types/common.types';
+import { authService } from '@/shared/services/supabase';
 import type { CreateUserData, UpdateUserData } from '@/shared/services/supabase';
+import { usersRepository } from '@/shared/repositories/UsersRepository';
+import type { UserDomain, UserMetricsDomain } from '@/shared/domain/user';
 
 // =============================================================================
 // USERS STATE - Estado de usuarios
@@ -14,7 +15,7 @@ import type { CreateUserData, UpdateUserData } from '@/shared/services/supabase'
 
 export interface UsersState {
   // Lista de usuarios
-  users: User[];
+  users: UserDomain[];
   
   // Estados de carga
   loading: boolean;
@@ -29,16 +30,10 @@ export interface UsersState {
   totalPages: number;
   totalUsers: number;
   usersPerPage: number;
+  hasMore: boolean;
   
   // Estadísticas
-  stats: {
-    totalUsers: number;
-    activeUsers: number;
-    inactiveUsers: number;
-    admins: number;
-    technicians: number;
-    requesters: number;
-  };
+  stats: UserMetricsDomain;
 }
 
 // =============================================================================
@@ -48,6 +43,7 @@ export interface UsersState {
 export interface UsersActions {
   // Carga de datos
   loadUsers: () => Promise<void>;
+  loadMoreUsers: () => Promise<void>;
   
   // CRUD de usuarios
   createUser: (userData: CreateUserData) => Promise<void>;
@@ -55,7 +51,7 @@ export interface UsersActions {
   deleteUser: (userId: string) => Promise<void>;
   
   // Gestión de solicitudes de registro
-  loadPendingUsers: () => Promise<User[]>;
+  loadPendingUsers: () => Promise<UserDomain[]>;
   approvePendingUser: (pendingUserId: string, approvedBy: string, roleName?: string) => Promise<void>;
   rejectPendingUser: (pendingUserId: string, rejectedBy: string, reason: string) => Promise<void>;
   
@@ -74,14 +70,7 @@ export interface UsersActions {
   clearError: () => void;
   
   // Utilidades
-  calculateStats: (users: User[]) => {
-    totalUsers: number;
-    activeUsers: number;
-    inactiveUsers: number;
-    admins: number;
-    technicians: number;
-    requesters: number;
-  };
+  updateStats: () => void;
 }
 
 // =============================================================================
@@ -102,6 +91,7 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
   totalPages: 1,
   totalUsers: 0,
   usersPerPage: 20,
+  hasMore: true,
   stats: {
     totalUsers: 0,
     activeUsers: 0,
@@ -118,22 +108,22 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
   /**
    * Calcular estadísticas basadas en los usuarios actuales
    */
-  calculateStats: (users: User[]) => {
-    const totalUsers = users.length;
-    const activeUsers = users.filter(user => user.isActive).length;
-    const inactiveUsers = totalUsers - activeUsers;
-    const admins = users.filter(user => user.role === 'admin').length;
-    const technicians = users.filter(user => user.role === 'technician').length;
-    const requesters = users.filter(user => user.role === 'requester').length;
-
-    return {
-      totalUsers,
-      activeUsers,
-      inactiveUsers,
-      admins,
-      technicians,
-      requesters,
-    };
+  updateStats: () => {
+    import('@/shared/services/supabase').then(async ({ edgeFunctionsService }) => {
+      try {
+        const metrics = await edgeFunctionsService.getUserMetrics();
+        set({ stats: metrics });
+      } catch {
+        const users = get().users;
+        const totalUsers = users.length;
+        const activeUsers = users.filter(u => u.isActive).length;
+        const inactiveUsers = totalUsers - activeUsers;
+        const admins = users.filter(u => u.role === 'admin').length;
+        const technicians = users.filter(u => u.role === 'technician').length;
+        const requesters = users.filter(u => u.role === 'requester').length;
+        set({ stats: { totalUsers, activeUsers, inactiveUsers, admins, technicians, requesters } });
+      }
+    })
   },
 
   // =============================================================================
@@ -144,62 +134,31 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
     set({ loading: true, error: null });
     
     try {
-      const supabaseUsers = await authService.getUsers();
       const { currentPage, usersPerPage, filters, searchQuery } = get();
-      
-      // Mapear usuarios de Supabase a tipos de la aplicación
-      const users = supabaseUsers.map(mapProfileToUser);
-      
-      // Calcular estadísticas basadas en todos los usuarios (sin filtros)
-      const stats = get().calculateStats(users);
-      
-      // Aplicar filtros
-      let filteredUsers = users;
-      
-      if (filters.role) {
-        filteredUsers = filteredUsers.filter(user => user.role === filters.role);
-      }
-      
-      if (filters.department) {
-        filteredUsers = filteredUsers.filter(user => user.department === filters.department);
-      }
-      
-      if (filters.status) {
-        const isActive = filters.status === 'active';
-        filteredUsers = filteredUsers.filter(user => user.isActive === isActive);
-      }
-      
-      // Aplicar búsqueda
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        filteredUsers = filteredUsers.filter(user => 
-          user.name.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query) ||
-          user.department.toLowerCase().includes(query)
-        );
-      }
-      
-      // Calcular paginación
-      const totalUsers = filteredUsers.length;
-      const totalPages = Math.ceil(totalUsers / usersPerPage);
-      const startIndex = (currentPage - 1) * usersPerPage;
-      const endIndex = startIndex + usersPerPage;
-      const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-      
-      set({
-        users: paginatedUsers,
-        totalUsers,
+      const result = await usersRepository.list({ page: currentPage, limit: usersPerPage, search: searchQuery, role: filters.role });
+      const totalPages = Math.ceil(result.total / usersPerPage);
+      set((state) => ({
+        users: currentPage === 1 ? result.items : [...state.users, ...result.items],
+        totalUsers: result.total,
         totalPages,
-        stats,
+        hasMore: result.hasMore,
         loading: false,
         error: null
-      });
+      }));
+      get().updateStats();
     } catch (error) {
       set({
         loading: false,
         error: error instanceof Error ? error.message : 'Error al cargar usuarios'
       });
     }
+  },
+
+  loadMoreUsers: async () => {
+    const { hasMore, currentPage } = get();
+    if (!hasMore) return;
+    set({ currentPage: currentPage + 1 });
+    await get().loadUsers();
   },
 
   // =============================================================================
@@ -293,12 +252,12 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
   // =============================================================================
 
   setFilters: (filters: Record<string, string>) => {
-    set({ filters, currentPage: 1 }); // Reset a primera página
+    set({ filters, currentPage: 1, hasMore: true });
     get().loadUsers(); // Recargar con nuevos filtros
   },
 
   setSearchQuery: (query: string) => {
-    set({ searchQuery: query, currentPage: 1 }); // Reset a primera página
+    set({ searchQuery: query, currentPage: 1, hasMore: true });
     get().loadUsers(); // Recargar con nueva búsqueda
   },
 
@@ -306,7 +265,8 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
     set({ 
       filters: {}, 
       searchQuery: '', 
-      currentPage: 1 
+      currentPage: 1,
+      hasMore: true
     });
     get().loadUsers(); // Recargar sin filtros
   },

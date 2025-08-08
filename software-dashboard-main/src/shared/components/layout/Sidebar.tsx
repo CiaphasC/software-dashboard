@@ -11,6 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { cn } from '@/shared/utils/utils';
+import { usePrefetchOnHover } from '@/shared/hooks/usePrefetchOnHover';
 import { useAuthStore } from '@/shared/store';
 import { Button } from '@/shared/components/ui/Button';
 import { useSettingsStore } from '@/shared/store';
@@ -105,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="lg:hidden p-2 hover:bg-gradient-to-r hover:from-red-50/80 hover:to-pink-50/80 rounded-xl transition-all duration-300 hover:shadow-md hover:scale-105"
+            className="xl:hidden p-2 hover:bg-gradient-to-r hover:from-red-50/80 hover:to-pink-50/80 rounded-xl transition-all duration-300 hover:shadow-md hover:scale-105"
           >
             <X className="h-5 w-5 text-slate-600" />
           </Button>
@@ -121,6 +122,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         </div>
         
         {filteredNavigation.map((item, index) => {
+          // Prefetch por intención según sección
+          const prefetchIntention = item.name === 'Incidencias'
+            ? 'incidents:firstPage'
+            : item.name === 'Requerimientos'
+            ? 'requirements:firstPage'
+            : item.name === 'Usuarios'
+            ? 'users:firstPage'
+            : null
+          const prefetchHandlers = prefetchIntention ? usePrefetchOnHover(prefetchIntention as any) : undefined
           const isActive = location.pathname === item.href;
           return (
             <motion.div
@@ -132,6 +142,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
               <Link
                 to={item.href}
                 onClick={onClose} // Close sidebar on mobile when clicking a link
+                onPointerEnter={prefetchHandlers?.onPointerEnter}
+                onPointerLeave={prefetchHandlers?.onPointerLeave}
+                onFocus={prefetchHandlers?.onFocus}
+                onBlur={prefetchHandlers?.onBlur}
                 className={cn(
                   'group flex items-center px-3 py-3 text-sm font-medium rounded-2xl transition-all duration-300 relative overflow-hidden',
                   isActive

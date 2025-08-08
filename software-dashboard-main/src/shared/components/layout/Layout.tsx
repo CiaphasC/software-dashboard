@@ -15,7 +15,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024); // Cambiar a lg breakpoint
+      setIsMobile(window.innerWidth < 1280); // Cambiar a xl breakpoint para más espacio
     };
     
     checkMobile();
@@ -42,21 +42,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 xl:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar - Fixed on desktop, overlay on mobile */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out xl:translate-x-0 ${
         isMobile ? (sidebarOpen ? 'translate-x-0' : '-translate-x-full') : ''
       }`}>
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
       {/* Main content area */}
-      <div className="lg:pl-64">
+      <div className="xl:pl-64">
         {/* Header - Fixed on desktop */}
         <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
           <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -64,7 +64,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         
         {/* Page content */}
         <main className="min-h-screen bg-gray-50">
-          <div className="p-4 lg:p-6">
+          <div className="p-4 xl:p-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

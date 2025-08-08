@@ -17,8 +17,8 @@ create table if not exists public.departments (
   name        text unique not null,
   short_name  text unique not null,  -- Abreviatura del departamento
   is_active   boolean not null default true,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(), -- Fecha y hora automática de creación
+  updated_at  timestamptz not null default now()  -- Fecha y hora automática de última actualización
 );
 
 -- Insertar todos los departamentos con sus abreviaturas
@@ -53,8 +53,8 @@ create table if not exists public.roles (
   description text,
   permissions jsonb not null default '[]',  -- Array de permisos
   is_active   boolean not null default true,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(), -- Fecha y hora automática de creación
+  updated_at  timestamptz not null default now()  -- Fecha y hora automática de última actualización
 );
 
 -- Insertar roles por defecto
@@ -86,8 +86,8 @@ create table public.profiles (
 
   avatar_url          text,
 
-  created_at          timestamptz not null default now(),
-  updated_at          timestamptz not null default now(),
+  created_at          timestamptz not null default now(), -- Fecha y hora automática de creación
+  updated_at          timestamptz not null default now(), -- Fecha y hora automática de última actualización
 
   constraint profiles_email_unique unique(email)
 );
@@ -150,11 +150,11 @@ create table public.incidents (
   review_time_hours         numeric(10,2), -- Tiempo desde inicio de revisión hasta resolución
   resolution_time_hours     numeric(10,2), -- Tiempo total desde creación hasta resolución
   
-  last_modified_by          uuid references public.profiles(id),
-  last_modified_at          timestamptz,
+  last_modified_by          uuid references public.profiles(id), -- Usuario que realizó la última modificación
+  last_modified_at          timestamptz, -- Fecha y hora de la última modificación manual
   
-  created_at                timestamptz not null default now(),
-  updated_at                timestamptz not null default now()
+  created_at                timestamptz not null default now(), -- Fecha y hora automática de creación
+  updated_at                timestamptz not null default now()  -- Fecha y hora automática de última actualización
 );
 
 comment on table public.incidents is 'Tickets de soporte técnico';
@@ -188,11 +188,11 @@ create table public.requirements (
   review_time_hours         numeric(10,2), -- Tiempo desde inicio de revisión hasta entrega
   delivery_time_hours       numeric(10,2), -- Tiempo total desde creación hasta entrega
   
-  last_modified_by          uuid references public.profiles(id),
-  last_modified_at          timestamptz,
+  last_modified_by          uuid references public.profiles(id), -- Usuario que realizó la última modificación
+  last_modified_at          timestamptz, -- Fecha y hora de la última modificación manual
   
-  created_at                timestamptz not null default now(),
-  updated_at                timestamptz not null default now()
+  created_at                timestamptz not null default now(), -- Fecha y hora automática de creación
+  updated_at                timestamptz not null default now()  -- Fecha y hora automática de última actualización
 );
 
 comment on table public.requirements is 'Solicitudes de recursos y servicios';
@@ -251,13 +251,7 @@ create table public.status_history (
   new_status  text not null,
   changed_by  uuid not null references public.profiles(id),
   changed_at  timestamptz not null default now(),
-  notes       text,
-  
-  -- Índices para optimizar consultas
-  constraint status_history_item_check check (
-    (item_type = 'incident' and item_id in (select id from public.incidents)) or
-    (item_type = 'requirement' and item_id in (select id from public.requirements))
-  )
+  notes       text
 );
 
 -- Índices para optimizar consultas

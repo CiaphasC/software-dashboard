@@ -97,128 +97,122 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onView, onEdit, onDele
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4, scale: 1.02 }}
+      whileHover={{ y: -8, scale: 1.02 }}
       transition={{ 
-        duration: 0.3,
-        ease: "easeOut",
+        duration: 0.4,
+        ease: [0.25, 0.46, 0.45, 0.94],
         scale: {
           type: "spring",
-          stiffness: 300,
-          damping: 20
+          stiffness: 400,
+          damping: 25
         }
       }}
-      className="group"
+      className="group w-full h-full"
     >
-      <Card className="overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 bg-white group-hover:bg-gradient-to-br group-hover:from-white group-hover:to-gray-50">
-        {/* Top Bar con gradiente */}
-        <div className={`h-1 sm:h-2 ${config.topBarColor}`} />
+      <div className="relative w-full h-full bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.16)] transition-all duration-500 overflow-hidden border border-gray-100/50 backdrop-blur-sm">
+        {/* Fondo con gradiente sutil */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 via-white to-gray-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
         
-        <CardContent className="p-4 sm:p-6">
-          {/* Header con avatar y información principal */}
-          <div className="flex items-start justify-between mb-4 sm:mb-6">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              {/* Avatar con gradiente */}
-              <div className="relative">
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 ${config.color} rounded-full flex items-center justify-center shadow-lg relative overflow-hidden`}>
-                  <span className="text-white font-bold text-lg sm:text-xl relative z-10">
-                    {user.name.charAt(0).toUpperCase()}
-                  </span>
-                  {/* Efecto de brillo sutil */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-60"></div>
-                </div>
-                {/* Icono de rol superpuesto */}
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-white rounded-full flex items-center justify-center shadow-md border-2 border-white">
-                  <RoleIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-600" />
-                </div>
+        {/* Header con avatar y información principal */}
+        <div className="relative z-10 p-6 pb-4">
+          <div className="flex items-start space-x-4">
+            {/* Avatar moderno */}
+            <div className="relative flex-shrink-0">
+              <div className={`w-14 h-14 ${config.color} rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden`}>
+                <span className="text-white font-bold text-lg relative z-10">
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+                {/* Efecto de brillo */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-white/10"></div>
               </div>
-              
-              {/* Información del usuario */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 mb-1">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">{user.name}</h3>
-                  <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                </div>
-                <div className="flex items-center space-x-1 text-gray-500 mb-2">
-                  <Mail className="w-3 h-3 sm:w-3 sm:h-3 flex-shrink-0" />
-                  <span className="text-xs sm:text-sm truncate">{user.email}</span>
-                </div>
-                <Badge className={`${config.badgeColor} text-white border-0 px-2 sm:px-3 py-1 text-xs font-medium`}>
-                  {getRoleText(user.role)}
+              {/* Icono de rol */}
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-100">
+                <RoleIcon className="w-2.5 h-2.5 text-gray-600" />
+              </div>
+              {/* Indicador de estado */}
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white shadow-sm"></div>
+            </div>
+            
+            {/* Información del usuario */}
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 truncate mb-1">{user.name}</h3>
+              <div className="flex items-center space-x-2 text-gray-500 mb-3">
+                <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-sm truncate">{user.email}</span>
+              </div>
+              <Badge className={`${config.badgeColor} text-white border-0 px-2.5 py-1 text-xs font-medium shadow-sm rounded-lg`}>
+                {getRoleText(user.role)}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Contenido principal */}
+        <div className="relative z-10 px-6 pb-6 space-y-4">
+          {/* Departamento */}
+          <div className="flex items-center space-x-3 p-3 bg-gray-50/60 rounded-xl border border-gray-100/50">
+            <div className={`p-2 rounded-lg ${config.bgColor} shadow-sm`}>
+              <MapPin className={`w-3.5 h-3.5 ${config.textColor}`} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">Departamento</span>
+              <p className="text-sm font-medium text-gray-900 truncate">{user.department}</p>
+            </div>
+          </div>
+
+          {/* Estado de sesión */}
+          <div className="flex items-center space-x-3 p-3 bg-gray-50/60 rounded-xl border border-gray-100/50">
+            <div className="p-2 rounded-lg bg-gray-200 shadow-sm">
+              <Clock className="w-3.5 h-3.5 text-gray-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">Estado</span>
+              <div className="flex items-center space-x-2 mt-1">
+                <Badge variant={getSessionStatusColor(getUserSessionStatus(user))} className="text-xs shadow-sm font-medium rounded-lg">
+                  {getSessionStatusText(getUserSessionStatus(user))}
                 </Badge>
               </div>
             </div>
           </div>
 
-          {/* Detalles del usuario */}
-          <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-            {/* Departamento */}
-            <div className="flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg sm:rounded-xl border border-gray-200/50">
-              <div className={`p-1.5 sm:p-2 rounded-lg ${config.bgColor}`}>
-                <MapPin className={`w-3 h-3 sm:w-4 sm:h-4 ${config.textColor}`} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">Departamento</span>
-                <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">{user.department}</p>
-              </div>
+          {/* Fecha de registro */}
+          <div className="flex items-center space-x-3 p-3 bg-gray-50/60 rounded-xl border border-gray-100/50">
+            <div className="p-2 rounded-lg bg-gray-200 shadow-sm">
+              <Calendar className="w-3.5 h-3.5 text-gray-600" />
             </div>
-
-            {/* Estado de sesión */}
-            <div className="flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg sm:rounded-xl border border-gray-200/50">
-              <div className="p-1.5 sm:p-2 rounded-lg bg-gray-200">
-                <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">Estado de Sesión</span>
-                <div className="flex items-center space-x-2 mt-1">
-                  <Badge variant={getSessionStatusColor(getUserSessionStatus(user))} className="text-xs">
-                    {getSessionStatusText(getUserSessionStatus(user))}
-                  </Badge>
-                  <span className="text-xs text-gray-500 truncate">
-                    {formatLastLoginTime(user.lastLoginAt)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Fecha de registro */}
-            <div className="flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg sm:rounded-xl border border-gray-200/50">
-              <div className="p-1.5 sm:p-2 rounded-lg bg-gray-200">
-                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">Registrado</span>
-                <p className="text-xs sm:text-sm font-semibold text-gray-900">
-                  {new Date(user.createdAt).toLocaleDateString('es-ES')}
-                </p>
-              </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">Registrado</span>
+              <p className="text-sm font-medium text-gray-900">
+                {new Date(user.createdAt).toLocaleDateString('es-ES')}
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Botones de acción */}
-          <div className="flex space-x-2 sm:space-x-3">
+        {/* Botones de acción */}
+        <div className="relative z-10 px-6 pb-6">
+          <div className="flex space-x-3">
             <Button
               onClick={() => onView(user)}
               variant="outline"
               size="sm"
-              className="flex-1 bg-white hover:bg-blue-50 border-blue-200 hover:border-blue-300 text-blue-700 hover:text-blue-800 transition-all duration-200 font-medium text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+              className="flex-1 bg-white/80 hover:bg-blue-50/90 border-gray-200 hover:border-blue-300 text-gray-700 hover:text-blue-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md py-2.5 text-sm rounded-xl"
             >
-              <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Ver Detalles</span>
-              <span className="sm:hidden">Ver</span>
+              <Eye className="w-3.5 h-3.5 mr-2" />
+              Ver
             </Button>
             <Button
               onClick={() => onEdit(user)}
               variant="outline"
               size="sm"
-              className="flex-1 bg-white hover:bg-emerald-50 border-emerald-200 hover:border-emerald-300 text-emerald-700 hover:text-emerald-800 transition-all duration-200 font-medium text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+              className="flex-1 bg-white/80 hover:bg-emerald-50/90 border-gray-200 hover:border-emerald-300 text-gray-700 hover:text-emerald-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md py-2.5 text-sm rounded-xl"
             >
-              <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Editar</span>
-              <span className="sm:hidden">Edit</span>
+              <Edit className="w-3.5 h-3.5 mr-2" />
+              Editar
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   );
 }; 

@@ -5,7 +5,9 @@
 
 import { create } from 'zustand';
 import { FilterValues } from '@/shared/types/common.types';
-import { dataService, type IncidentWithUsers, type IncidentFilters } from '@/shared/services/supabase';
+import { dataService } from '@/shared/services/supabase';
+import { incidentsRepository, type IncidentQuery } from '@/shared/repositories/IncidentsRepository';
+import type { IncidentDomain, IncidentMetricsDomain } from '@/shared/domain/incident';
 
 // =============================================================================
 // INCIDENTS STATE - Estado de incidencias
@@ -13,7 +15,7 @@ import { dataService, type IncidentWithUsers, type IncidentFilters } from '@/sha
 
 export interface IncidentsState {
   // Lista de incidencias
-  incidents: IncidentWithUsers[];
+  incidents: IncidentDomain[];
   loading: boolean;
   error: string | null;
   
@@ -26,15 +28,11 @@ export interface IncidentsState {
   totalPages: number;
   itemsPerPage: number;
   totalItems: number;
+  hasMore: boolean;
+  loadedPages: number;
   
   // Estadísticas
-  stats: {
-    totalIncidents: number;
-    openIncidents: number;
-    inProgressIncidents: number;
-    resolvedIncidents: number;
-    closedIncidents: number;
-  };
+  stats: IncidentMetricsDomain;
 }
 
 // =============================================================================
@@ -44,6 +42,7 @@ export interface IncidentsState {
 export interface IncidentsActions {
   // CRUD de incidencias
   loadIncidents: (filters?: FilterValues) => Promise<void>;
+  loadMoreIncidents: () => Promise<void>;
   createIncident: (incidentData: any) => Promise<void>;
   updateIncident: (id: string, updates: any) => Promise<void>;
   deleteIncident: (id: string) => Promise<void>;
@@ -84,6 +83,8 @@ export const useIncidentsStore = create<IncidentsState & IncidentsActions>()((se
   totalPages: 1,
   itemsPerPage: 10,
   totalItems: 0,
+  hasMore: true,
+  loadedPages: 0,
   stats: {
     totalIncidents: 0,
     openIncidents: 0,
@@ -105,37 +106,35 @@ export const useIncidentsStore = create<IncidentsState & IncidentsActions>()((se
       const currentPage = get().currentPage;
       const itemsPerPage = get().itemsPerPage;
 
-      // Convertir filtros al formato de Supabase
-      const supabaseFilters: IncidentFilters = {};
-      if (currentFilters.status) supabaseFilters.status = currentFilters.status as string;
-      if (currentFilters.priority) supabaseFilters.priority = currentFilters.priority as string;
-      if (currentFilters.type) supabaseFilters.type = currentFilters.type as string;
-      if (currentFilters.assignedTo) supabaseFilters.assignedTo = currentFilters.assignedTo as string;
-      if (currentFilters.createdBy) supabaseFilters.createdBy = currentFilters.createdBy as string;
-      if (currentFilters.department) supabaseFilters.department = currentFilters.department as string;
-      if (currentFilters.dateFrom) supabaseFilters.dateFrom = currentFilters.dateFrom as string;
-      if (currentFilters.dateTo) supabaseFilters.dateTo = currentFilters.dateTo as string;
-
-      const result = await dataService.getIncidents({
+      const query: IncidentQuery = {
         page: currentPage,
         limit: itemsPerPage,
         search: searchQuery,
-        filters: supabaseFilters
-      });
-
-      if (result.error) {
-        throw new Error(result.error);
+        filters: {
+          status: currentFilters.status as string | undefined,
+          priority: currentFilters.priority as string | undefined,
+          type: currentFilters.type as string | undefined,
+          assignedTo: currentFilters.assignedTo as string | undefined,
+          createdBy: currentFilters.createdBy as string | undefined,
+          department: currentFilters.department as string | undefined,
+          dateFrom: currentFilters.dateFrom as string | undefined,
+          dateTo: currentFilters.dateTo as string | undefined,
+        }
       }
-
+ 
+      const result = await incidentsRepository.list(query);
+ 
       const totalPages = Math.ceil(result.total / itemsPerPage);
-
-      set({
-        incidents: result.data,
+ 
+      set((state) => ({
+        incidents: currentPage === 1 ? result.items : [...state.incidents, ...result.items],
         totalItems: result.total,
         totalPages,
+        hasMore: result.hasMore,
+        loadedPages: result.page,
         loading: false,
         error: null
-      });
+      }));
 
       // Actualizar estadísticas
       get().updateStats();
@@ -147,13 +146,21 @@ export const useIncidentsStore = create<IncidentsState & IncidentsActions>()((se
     }
   },
 
+  // Cargar siguiente página (scroll infinito)
+  loadMoreIncidents: async () => {
+    const { hasMore, currentPage } = get();
+    if (!hasMore) return;
+    set({ currentPage: currentPage + 1 });
+    await get().loadIncidents();
+  },
+
   createIncident: async (incidentData) => {
     set({ loading: true, error: null });
     
     try {
-      await dataService.createIncident(incidentData);
-      
-      // Recargar incidencias después de crear
+      const { edgeFunctionsService } = await import('@/shared/services/supabase');
+      await edgeFunctionsService.createIncident(incidentData);
+      set({ currentPage: 1 });
       await get().loadIncidents();
     } catch (error) {
       set({
@@ -168,8 +175,7 @@ export const useIncidentsStore = create<IncidentsState & IncidentsActions>()((se
     
     try {
       await dataService.updateIncident(id, updates);
-      
-      // Recargar incidencias después de actualizar
+      set({ currentPage: 1 });
       await get().loadIncidents();
     } catch (error) {
       set({
@@ -184,8 +190,7 @@ export const useIncidentsStore = create<IncidentsState & IncidentsActions>()((se
     
     try {
       await dataService.deleteIncident(id);
-      
-      // Recargar incidencias después de eliminar
+      set({ currentPage: 1 });
       await get().loadIncidents();
     } catch (error) {
       set({
@@ -200,12 +205,12 @@ export const useIncidentsStore = create<IncidentsState & IncidentsActions>()((se
   // =============================================================================
 
   setFilters: (filters: FilterValues) => {
-    set({ filters, currentPage: 1 });
+    set({ filters, currentPage: 1, hasMore: true });
     get().loadIncidents(filters);
   },
 
   setSearchQuery: (query: string) => {
-    set({ searchQuery: query, currentPage: 1 });
+    set({ searchQuery: query, currentPage: 1, hasMore: true });
     get().loadIncidents();
   },
 
@@ -213,7 +218,8 @@ export const useIncidentsStore = create<IncidentsState & IncidentsActions>()((se
     set({ 
       filters: {}, 
       searchQuery: '', 
-      currentPage: 1 
+      currentPage: 1,
+      hasMore: true
     });
     get().loadIncidents();
   },
@@ -253,16 +259,21 @@ export const useIncidentsStore = create<IncidentsState & IncidentsActions>()((se
   // =============================================================================
 
   updateStats: () => {
-    const incidents = get().incidents;
-    
-    const stats = {
-      totalIncidents: incidents.length,
-      openIncidents: incidents.filter(i => i.status === 'open').length,
-      inProgressIncidents: incidents.filter(i => i.status === 'in_progress').length,
-      resolvedIncidents: incidents.filter(i => i.status === 'resolved').length,
-      closedIncidents: incidents.filter(i => i.status === 'closed').length
-    };
-
-    set({ stats });
+    import('@/shared/services/supabase').then(async ({ edgeFunctionsService }) => {
+      try {
+        const metrics = await edgeFunctionsService.getIncidentMetrics();
+        set({ stats: metrics });
+      } catch {
+        const incidents = get().incidents;
+        const stats: IncidentMetricsDomain = {
+          totalIncidents: incidents.length,
+          openIncidents: incidents.filter(i => i.status === 'open').length,
+          inProgressIncidents: incidents.filter(i => i.status === 'in_progress').length,
+          resolvedIncidents: incidents.filter(i => i.status === 'resolved').length,
+          closedIncidents: incidents.filter(i => i.status === 'closed').length
+        };
+        set({ stats });
+      }
+    })
   }
 })); 

@@ -1,25 +1,23 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { 
+  X, 
   AlertTriangle, 
+  Clock, 
+  CheckCircle, 
   Calendar,
-  AlertCircle,
-  Clock,
-  CheckCircle,
-  Zap,
-  Shield,
-  Save,
-  X,
-  ChevronDown,
   User,
-  FileText
+  MessageSquare,
+  Save,
+  RotateCcw
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Textarea } from '@/shared/components/ui/Textarea';
+import { Select } from '@/shared/components/ui/Select';
 import { 
   Modal, 
   ModalHeader, 
@@ -28,7 +26,7 @@ import {
   ModalContainer
 } from '@/shared/components/ui';
 import { useAuthStore } from '@/shared/store';
-import { formatDateTime } from '@/shared/utils/utils';
+import { useFormatters } from '@/shared/utils/utils';
 
 // ============================================================================
 // SCHEMA & TYPES
@@ -104,6 +102,7 @@ export const StatusChangeModal: React.FC<StatusChangeModalProps> = ({
   itemTitle
 }) => {
   const { user } = useAuthStore();
+  const { formatDateTime } = useFormatters();
   const isAdmin = user?.role === 'admin';
   const isTechnician = user?.role === 'technician';
 
@@ -168,7 +167,7 @@ export const StatusChangeModal: React.FC<StatusChangeModalProps> = ({
         <ModalHeader
           title={`Cambiar Estado - ${itemType === 'incident' ? 'Incidencia' : 'Requerimiento'}`}
           subtitle={`${itemTitle}`}
-          icon={<FileText className="h-5 w-5 sm:h-6 sm:w-6 text-white drop-shadow-lg" />}
+          icon={<MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-white drop-shadow-lg" />}
           onClose={onClose}
           iconBgColor="bg-gradient-to-br from-blue-400 to-indigo-500 shadow-lg shadow-blue-500/50"
           headerBgColor="bg-gradient-to-r from-blue-50 via-indigo-50/80 to-blue-50/90"
@@ -211,7 +210,7 @@ export const StatusChangeModal: React.FC<StatusChangeModalProps> = ({
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <AlertCircle className="h-4 w-4" />
+                  <AlertTriangle className="h-4 w-4" />
                   {errors.newStatus.message}
                 </motion.p>
               )}

@@ -22,6 +22,7 @@ import { Select } from '@/shared/components/ui/Select';
 import { UserRole } from '@/shared/types/common.types';
 import { userFormSchema, type UserFormData, type UserFormProps } from '@/features/users/types';
 import { dataService } from '@/shared/services/supabase';
+import { createPortal } from 'react-dom';
 
 // Opciones por defecto (fallback)
 const defaultRoleOptions = [
@@ -65,13 +66,12 @@ export const UserForm: React.FC<UserFormProps> = ({
   } = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
     defaultValues: user ? {
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      department: user.department,
-      avatar: user.avatar,
-      isActive: user.isActive,
-      isEmailVerified: user.isEmailVerified,
+      name: user.name || '',
+      email: user.email || '',
+      role: (user.role as UserRole) || UserRole.TECHNICIAN,
+      department: user.department || '',
+      isActive: user.isActive ?? true,
+      isEmailVerified: user.isEmailVerified ?? false,
       password: '',
       confirmPassword: '',
     } : {
@@ -79,7 +79,6 @@ export const UserForm: React.FC<UserFormProps> = ({
       email: '',
       role: UserRole.TECHNICIAN,
       department: '',
-      avatar: '',
       isActive: true,
       isEmailVerified: false,
       password: '',
@@ -124,20 +123,18 @@ export const UserForm: React.FC<UserFormProps> = ({
 
   useEffect(() => {
     if (user) {
-      setValue('name', user.name);
-      setValue('email', user.email);
-      setValue('role', user.role);
-      setValue('department', user.department);
-      setValue('avatar', user.avatar || '');
-      setValue('isActive', user.isActive);
-      setValue('isEmailVerified', user.isEmailVerified);
+      setValue('name', user.name || '');
+      setValue('email', user.email || '');
+      setValue('role', user.role || UserRole.TECHNICIAN);
+      setValue('department', user.department || '');
+      setValue('isActive', user.isActive ?? true);
+      setValue('isEmailVerified', user.isEmailVerified ?? false);
     } else {
       reset({
         name: '',
         email: '',
         role: UserRole.TECHNICIAN,
         department: '',
-        avatar: '',
         isActive: true,
         isEmailVerified: false
       });
@@ -168,7 +165,6 @@ export const UserForm: React.FC<UserFormProps> = ({
         email: data.email,
         role: data.role,
         department: data.department,
-        avatar: data.avatar,
         isActive: data.isActive,
         isEmailVerified: data.isEmailVerified,
         ...(data.password && data.password.length > 0 && {
@@ -185,12 +181,12 @@ export const UserForm: React.FC<UserFormProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-[9999]"
       onClick={onCancel}
       data-modal="open"
       data-form="user-form"
@@ -456,12 +452,10 @@ export const UserForm: React.FC<UserFormProps> = ({
                     <p className="text-sm font-medium text-gray-900">
                       {watchedRole === UserRole.ADMIN && 'Administrador'}
                       {watchedRole === UserRole.TECHNICIAN && 'Técnico'}
-                      {watchedRole === UserRole.REQUESTER && 'Solicitante'}
                     </p>
                     <p className="text-xs text-gray-600">
                       {watchedRole === UserRole.ADMIN && 'Acceso completo al sistema y gestión de usuarios'}
                       {watchedRole === UserRole.TECHNICIAN && 'Puede resolver incidencias y gestionar requerimientos'}
-                      {watchedRole === UserRole.REQUESTER && 'Puede crear incidencias y solicitar requerimientos'}
                     </p>
                   </div>
                 </div>
@@ -502,22 +496,6 @@ export const UserForm: React.FC<UserFormProps> = ({
                     </label>
                   </div>
                 </div>
-              </div>
-
-              {/* Avatar URL - Full Width */}
-              <div className="group">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2 group-hover:text-blue-700 transition-colors">
-                  <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-sky-400 rounded-full"></div>
-                  <span>URL del Avatar (Opcional)</span>
-                </label>
-                <Input
-                  {...register('avatar')}
-                  placeholder="https://ejemplo.com/avatar.jpg"
-                  className="w-full px-3 py-3 bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/60 transition-all duration-300 hover:bg-white/90 hover:border-blue-300/40"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Puedes proporcionar una URL de imagen para el avatar del usuario
-                </p>
               </div>
 
               {/* Form Actions */}
@@ -562,6 +540,7 @@ export const UserForm: React.FC<UserFormProps> = ({
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }; 

@@ -156,12 +156,20 @@ const GenericCard = <T extends TableItem>({
                 </div>
               </motion.div>
               <div className="flex-1">
-                <h3 className={`font-bold text-gray-900 group-hover:text-${theme.primaryColor}-700 transition-colors line-clamp-1 text-lg`}>
-                  {item.title}
-                </h3>
-                <p className="text-sm text-gray-600 line-clamp-2 mt-2 leading-relaxed">
-                  {item.description}
-                </p>
+                {config.columns[0]?.render ? (
+                  // Usar el render personalizado de la primera columna
+                  config.columns[0].render(item)
+                ) : (
+                  // Fallback al renderizado por defecto
+                  <>
+                    <h3 className={`font-bold text-gray-900 group-hover:text-${theme.primaryColor}-700 transition-colors line-clamp-1 text-lg`}>
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 line-clamp-2 mt-2 leading-relaxed">
+                      {item.description}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>

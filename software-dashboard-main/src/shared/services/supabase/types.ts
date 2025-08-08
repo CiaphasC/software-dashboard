@@ -172,6 +172,7 @@ export interface Database {
           type: string
           priority: string
           status: string
+          requesting_area_id: number | null
           affected_area_id: number
           assigned_to: string | null
           created_by: string
@@ -190,6 +191,7 @@ export interface Database {
           type: string
           priority?: string
           status?: string
+          requesting_area_id?: number | null
           affected_area_id: number
           assigned_to?: string | null
           created_by: string
@@ -208,6 +210,7 @@ export interface Database {
           type?: string
           priority?: string
           status?: string
+          requesting_area_id?: number | null
           affected_area_id?: number
           assigned_to?: string | null
           created_by?: string
@@ -448,6 +451,7 @@ export interface Database {
           type: string
           priority: string
           status: string
+          requesting_area_id: number | null
           affected_area_id: number
           assigned_to: string | null
           created_by: string
@@ -464,6 +468,8 @@ export interface Database {
           assignee_name: string | null
           assignee_email: string | null
           assignee_role: string | null
+          requesting_area_name: string | null
+          requesting_area_short_name: string | null
           affected_area_name: string | null
           affected_area_short_name: string | null
         }
@@ -539,6 +545,7 @@ export interface Database {
           type: string
           priority: string
           status: string
+          requesting_area_id: number | null
           affected_area_id: number
           assigned_to: string | null
           created_by: string
@@ -555,6 +562,8 @@ export interface Database {
           assignee_name: string | null
           assignee_email: string | null
           assignee_role: string | null
+          requesting_area_name: string | null
+          requesting_area_short_name: string | null
           affected_area_name: string | null
           affected_area_short_name: string | null
           last_modified_by_name: string | null
