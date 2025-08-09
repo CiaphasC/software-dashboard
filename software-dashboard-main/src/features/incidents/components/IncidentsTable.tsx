@@ -256,9 +256,9 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
 
   return (
     <GenericTable
-      items={incidents as any}
+      items={incidents}
       loading={loading}
-      config={config as any}
+      config={config}
     />
   );
 }; 
