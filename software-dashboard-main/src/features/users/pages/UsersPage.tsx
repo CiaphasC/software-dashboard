@@ -140,7 +140,6 @@ export const UsersPage: React.FC = () => {
               users={users}
               pendingUsers={pendingUsers}
               loading={loading}
-              error={error || undefined}
               onEdit={setEditingUser}
               onDelete={handleDeleteUser}
               onApprove={handleApproveUser}
