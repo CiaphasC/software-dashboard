@@ -42,6 +42,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         prefetchManager.prefetch('users:firstPage');
         prefetchManager.prefetch('users:metrics');
         prefetchManager.prefetch('reports:bundle');
+        prefetchManager.prefetch('reports:initialData');
       } catch {}
     };
     if ('requestIdleCallback' in window) {
