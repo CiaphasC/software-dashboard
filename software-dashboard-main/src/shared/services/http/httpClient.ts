@@ -2,7 +2,7 @@
 // HTTP CLIENT - Fetch con abort, retry/backoff y streaming NDJSON
 // =============================================================================
 
-export interface HttpRequestOptions<TBody = any> {
+export interface HttpRequestOptions<TBody = unknown> {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   headers?: Record<string, string>
   body?: TBody
@@ -12,7 +12,7 @@ export interface HttpRequestOptions<TBody = any> {
   retryDelayMs?: number
 }
 
-export interface HttpResponse<T = any> {
+export interface HttpResponse<T = unknown> {
   ok: boolean
   status: number
   data: T
@@ -44,7 +44,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs?: number, signal?: 
 export class HttpClient {
   constructor(private readonly baseUrl: string = '') {}
 
-  async request<T = any, TBody = any>(path: string, options: HttpRequestOptions<TBody> = {}): Promise<HttpResponse<T>> {
+  async request<TResponse = unknown, TBody = unknown>(path: string, options: HttpRequestOptions<TBody> = {}): Promise<HttpResponse<TResponse>> {
     const {
       method = 'GET',
       headers = {},
@@ -61,7 +61,7 @@ export class HttpClient {
       ...headers,
     }
 
-    const exec = async (): Promise<HttpResponse<T>> => {
+    const exec = async (): Promise<HttpResponse<TResponse>> => {
       const res = await withTimeout(fetch(this.baseUrl + path, {
         method,
         headers: finalHeaders,
@@ -95,13 +95,13 @@ export class HttpClient {
   }
 
   // Streaming de NDJSON (línea por línea) o texto chunked
-  async stream<T = any, TBody = any>(path: string, options: HttpRequestOptions<TBody> & { onMessage: (chunk: T) => void }): Promise<void> {
+  async stream<TChunk = unknown, TBody = unknown>(path: string, options: HttpRequestOptions<TBody> & { onMessage: (chunk: TChunk) => void }): Promise<void> {
     const { onMessage, ...rest } = options
     const res = await this.request<Response>(path, { ...rest, // request devolverá data como texto/json, necesitamos fetch crudo
       // Hack: solicitamos Response real re-ejecutando fetch sin parse
     } as any)
     // Si viene como texto completo, intentar parsear como NDJSON
-    const data: any = (res as any).data
+    const data = res.data as unknown
     if (typeof data === 'string') {
       for (const line of data.split('\n')) {
         const trimmed = line.trim()

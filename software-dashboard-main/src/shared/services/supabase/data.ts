@@ -249,7 +249,7 @@ export class DataService {
         total: count || 0
       }
     } catch (error) {
-      console.error('❌ Error obteniendo requerimientos:', error)
+logger.error('❌ Error obteniendo requerimientos:', error)
       return {
         data: [],
         total: 0,
@@ -275,7 +275,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error obteniendo requerimiento:', error)
+logger.error('❌ Error obteniendo requerimiento:', error)
       return null
     }
   }
@@ -297,7 +297,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error creando requerimiento:', error)
+logger.error('❌ Error creando requerimiento:', error)
       throw error
     }
   }
@@ -320,7 +320,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error actualizando requerimiento:', error)
+logger.error('❌ Error actualizando requerimiento:', error)
       throw error
     }
   }
@@ -339,7 +339,7 @@ export class DataService {
         throw new Error(error.message)
       }
     } catch (error) {
-      console.error('❌ Error eliminando requerimiento:', error)
+logger.error('❌ Error eliminando requerimiento:', error)
       throw error
     }
   }
@@ -365,7 +365,7 @@ export class DataService {
 
       return data || []
     } catch (error) {
-      console.error('❌ Error obteniendo departamentos:', error)
+logger.error('❌ Error obteniendo departamentos:', error)
       throw error
     }
   }
@@ -382,7 +382,7 @@ export class DataService {
         .eq('is_active', true)
 
       if (error) {
-        console.error('❌ Error en consulta de roles:', error)
+logger.error('❌ Error en consulta de roles:', error)
         throw new Error(error.message)
       }
 
@@ -391,7 +391,7 @@ export class DataService {
       
       return sortedData
     } catch (error) {
-      console.error('❌ Error obteniendo roles:', error)
+logger.error('❌ Error obteniendo roles:', error)
       throw error
     }
   }
@@ -408,13 +408,13 @@ export class DataService {
         .order('name')
 
       if (error) {
-        console.error('❌ Error en consulta de usuarios:', error)
+logger.error('❌ Error en consulta de usuarios:', error)
         throw new Error(error.message)
       }
 
       return data || []
     } catch (error) {
-      console.error('❌ Error obteniendo usuarios:', error)
+logger.error('❌ Error obteniendo usuarios:', error)
       throw error
     }
   }
@@ -440,7 +440,7 @@ export class DataService {
 
       return data || []
     } catch (error) {
-      console.error('❌ Error obteniendo actividades:', error)
+logger.error('❌ Error obteniendo actividades:', error)
       throw error
     }
   }
@@ -462,7 +462,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error creando actividad:', error)
+logger.error('❌ Error creando actividad:', error)
       throw error
     }
   }
@@ -489,7 +489,7 @@ export class DataService {
 
       return data || []
     } catch (error) {
-      console.error('❌ Error obteniendo notificaciones:', error)
+logger.error('❌ Error obteniendo notificaciones:', error)
       throw error
     }
   }
@@ -508,7 +508,7 @@ export class DataService {
         throw new Error(error.message)
       }
     } catch (error) {
-      console.error('❌ Error marcando notificación como leída:', error)
+logger.error('❌ Error marcando notificación como leída:', error)
       throw error
     }
   }
@@ -528,7 +528,7 @@ export class DataService {
         throw new Error(error.message)
       }
     } catch (error) {
-      console.error('❌ Error marcando todas las notificaciones como leídas:', error)
+logger.error('❌ Error marcando todas las notificaciones como leídas:', error)
       throw error
     }
   }
@@ -550,7 +550,7 @@ export class DataService {
 
       return count || 0
     } catch (error) {
-      console.error('❌ Error obteniendo conteo de notificaciones:', error)
+logger.error('❌ Error obteniendo conteo de notificaciones:', error)
       throw error
     }
   }
@@ -576,7 +576,7 @@ export class DataService {
 
       return data || []
     } catch (error) {
-      console.error('❌ Error obteniendo reportes:', error)
+logger.error('❌ Error obteniendo reportes:', error)
       throw error
     }
   }
@@ -598,7 +598,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error creando reporte:', error)
+logger.error('❌ Error creando reporte:', error)
       throw error
     }
   }
@@ -621,7 +621,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error actualizando reporte:', error)
+logger.error('❌ Error actualizando reporte:', error)
       throw error
     }
   }
@@ -676,7 +676,7 @@ export class DataService {
         topDepartments: Array.isArray(metrics.topDepartments) ? metrics.topDepartments : []
       }
     } catch (error) {
-      console.error('❌ Error obteniendo métricas del dashboard:', error)
+logger.error('❌ Error obteniendo métricas del dashboard:', error)
       
       // Devolver métricas por defecto en caso de error
       return {
@@ -725,7 +725,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error creando notificación:', error)
+logger.error('❌ Error creando notificación:', error)
       throw error
     }
   }
@@ -757,7 +757,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error registrando actividad:', error)
+logger.error('❌ Error registrando actividad:', error)
       throw error
     }
   }

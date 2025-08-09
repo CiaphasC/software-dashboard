@@ -10,7 +10,7 @@ import { HttpClient } from '@/shared/services/http/httpClient';
 // TYPES - Tipos para edge functions
 // =============================================================================
 
-export interface EdgeFunctionResponse<T = any> {
+export interface EdgeFunctionResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
@@ -76,9 +76,9 @@ export class EdgeFunctionsService {
   }
 
   // Helper genérico para llamar edge functions
-  private async callEdgeFunction<T = any>(functionName: string, data: any): Promise<T> {
+  private async callEdgeFunction<TResponse>(functionName: string, data: unknown): Promise<TResponse> {
     const token = await this.getAuthToken();
-    const res = await this.http.request<EdgeFunctionResponse<T>>(`/${functionName}`, {
+    const res = await this.http.request<EdgeFunctionResponse<TResponse>>(`/${functionName}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
       body: data,
@@ -88,13 +88,13 @@ export class EdgeFunctionsService {
     })
     if (!res.ok) throw new Error(res.data?.error || `Error en ${functionName}`)
     if (!res.data?.success) throw new Error(res.data?.error || `Error en ${functionName}`)
-    return res.data.data as T
+    return res.data.data as TResponse
   }
 
   // Streaming NDJSON de Edge Function
-  async streamFunction<T = any>(functionName: string, data: any, onMessage: (chunk: T) => void): Promise<void> {
+  async streamFunction<TChunk>(functionName: string, data: unknown, onMessage: (chunk: TChunk) => void): Promise<void> {
     const token = await this.getAuthToken();
-    await this.http.stream<T>(`/${functionName}`, {
+    await this.http.stream<TChunk>(`/${functionName}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: data,
@@ -140,9 +140,9 @@ export class EdgeFunctionsService {
     page?: number;
     limit?: number;
     search?: string;
-    filters?: any;
-  }): Promise<{ items: any[]; total: number; page: number; limit: number; hasMore: boolean; }> {
-    const data = await this.callEdgeFunction('get-incident-ts', {
+    filters?: Record<string, unknown>;
+  }): Promise<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }> {
+    const data = await this.callEdgeFunction<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }>('get-incident-ts', {
       action: 'list',
       params,
     });
@@ -157,7 +157,7 @@ export class EdgeFunctionsService {
     resolvedIncidents: number;
     closedIncidents: number;
   }> {
-    const data = await this.callEdgeFunction('get-incident-ts', { action: 'metrics' });
+    const data = await this.callEdgeFunction<{ totalIncidents: number; openIncidents: number; inProgressIncidents: number; resolvedIncidents: number; closedIncidents: number; }>('get-incident-ts', { action: 'metrics' });
     return data;
   }
 
@@ -194,10 +194,10 @@ export class EdgeFunctionsService {
   }
 
   // Lista de requerimientos (Edge Function si existe, sino fallback a vista)
-  async listRequirements(params: { page?: number; limit?: number; search?: string; filters?: any }): Promise<{ items: any[]; total: number; page: number; limit: number; hasMore: boolean; }> {
+  async listRequirements(params: { page?: number; limit?: number; search?: string; filters?: Record<string, unknown> }): Promise<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }> {
     try {
       // Intentar edge function simétrica a incidents
-      const data = await this.callEdgeFunction('get-requirement-ts', { action: 'list', params });
+      const data = await this.callEdgeFunction<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }>('get-requirement-ts', { action: 'list', params });
       return data;
     } catch {
       // Fallback directo a Supabase
@@ -221,7 +221,7 @@ export class EdgeFunctionsService {
     }
   }
 
-  async getRequirement(id: string): Promise<any | null> {
+  async getRequirement(id: string): Promise<unknown | null> {
     const { data } = await supabase.from('requirements_with_times').select('*').eq('id', id).single();
     return data ?? null;
   }
@@ -255,14 +255,14 @@ export class EdgeFunctionsService {
   /**
    * Llamar cualquier edge function genérico
    */
-  async callGenericFunction<T = any>(functionName: string, data: any): Promise<T> {
-    return this.callEdgeFunction<T>(functionName, data);
+  async callGenericFunction<TResponse>(functionName: string, data: unknown): Promise<TResponse> {
+    return this.callEdgeFunction<TResponse>(functionName, data);
   }
 
   /**
    * Obtener permisos de renderizado (genérico)
    */
-  async getRenderPermissions(itemType: 'incident' | 'requirement', itemId?: string): Promise<any> {
+  async getRenderPermissions(itemType: 'incident' | 'requirement', itemId?: string): Promise<unknown> {
     const functionName = itemType === 'incident' ? 'update-incident-ts' : 'update-requirement-ts';
     return this.callEdgeFunction(functionName, {
       [`${itemType}_id`]: itemId,
@@ -273,10 +273,10 @@ export class EdgeFunctionsService {
   /**
    * USERS - Métodos estandarizados
    */
-  async listUsers(params?: { page?: number; limit?: number; search?: string; role?: string }): Promise<{ items: any[]; total: number; page: number; limit: number; hasMore: boolean; }> {
+  async listUsers(params?: { page?: number; limit?: number; search?: string; role?: string }): Promise<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }> {
     const page = params?.page ?? 1; const limit = params?.limit ?? 20;
     try {
-      const all = await this.callEdgeFunction<any[]>('get-users-ts', { search: params?.search, role: params?.role });
+      const all = await this.callEdgeFunction<unknown[]>('get-users-ts', { search: params?.search, role: params?.role });
       const total = all.length; const start = (page - 1) * limit; const items = all.slice(start, start + limit); const hasMore = page * limit < total;
       return { items, total, page, limit, hasMore };
     } catch {
@@ -296,12 +296,12 @@ export class EdgeFunctionsService {
     }
   }
 
-  async getUser(id: string): Promise<any | null> {
+  async getUser(id: string): Promise<unknown | null> {
     const { data } = await supabase.from('profiles').select('id, name, email, role_name, department_id, is_active').eq('id', id).single();
     return data ?? null;
   }
 
-  async updateUser(id: string, updates: Partial<{ name: string; role_name: string; department_id: number; is_active: boolean }>): Promise<any> {
+  async updateUser(id: string, updates: Partial<{ name: string; role_name: string; department_id: number; is_active: boolean }>): Promise<unknown> {
     const { data, error } = await supabase.from('profiles').update(updates).eq('id', id).select().single();
     if (error) throw error; return data;
   }

@@ -28,6 +28,7 @@ import {
   getSessionStatusText,
   formatLastLoginTime
 } from '@/shared/utils/sessionUtils';
+import { FixedSizeList as VirtualList } from 'react-window';
 
 // =============================================================================
 // TYPES - Tipos para el componente
@@ -138,79 +139,59 @@ export const UsersList: React.FC<UsersListProps> = ({
     </motion.div>
   );
 
+  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const user = filteredUsers[index]
+    return (
+      <div style={style}>
+        <div className="px-4">
+          <div className="grid grid-cols-12 items-center py-3 border-b border-gray-100">
+            <div className="col-span-4 flex items-center space-x-4">
+              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div className="font-bold text-gray-900">{user.name}</div>
+                <div className="text-xs text-gray-600">{user.email}</div>
+              </div>
+            </div>
+            <div className="col-span-2">
+              <Badge className={`${getRoleColor(user.role)} text-white border-0 px-2 py-0.5 text-xs font-medium rounded-lg`}>
+                {getRoleText(user.role)}
+              </Badge>
+            </div>
+            <div className="col-span-2">
+              <span className="text-sm font-medium text-gray-900">{user.department}</span>
+            </div>
+            <div className="col-span-2 flex items-center space-x-2">
+              <Badge variant={getSessionStatusColor(getUserSessionStatus(user))} className="text-xs font-medium rounded-lg">
+                {getSessionStatusText(getUserSessionStatus(user))}
+              </Badge>
+            </div>
+            <div className="col-span-2 flex items-center justify-end space-x-2 pr-2">
+              <Button onClick={() => onEdit(user)} variant="outline" size="sm" className="h-7 w-7 p-0 border-blue-300 text-blue-600 hover:bg-blue-50">
+                <Edit className="h-3.5 w-3.5" />
+              </Button>
+              <Button onClick={() => onDelete(user.id)} variant="outline" size="sm" className="h-7 w-7 p-0 border-red-300 text-red-600 hover:bg-red-50">
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const renderUserTable = () => (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Usuario</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Rol</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Departamento</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Estado</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Último Acceso</th>
-            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">Acciones</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {filteredUsers.map((user, index) => (
-            <tr key={user.id} className="hover:bg-gray-50/50 transition-colors duration-200">
-              <td className="px-6 py-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="font-bold text-gray-900">{user.name}</div>
-                    <div className="text-sm text-gray-600">{user.email}</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <Badge className={`${getRoleColor(user.role)} text-white border-0 px-3 py-1 text-sm font-medium rounded-lg`}>
-                  {getRoleText(user.role)}
-                </Badge>
-              </td>
-              <td className="px-6 py-4">
-                <span className="text-sm font-medium text-gray-900">{user.department}</span>
-              </td>
-              <td className="px-6 py-4">
-                <div className="flex items-center space-x-2">
-                  <Badge variant={getSessionStatusColor(getUserSessionStatus(user))} className="text-sm font-medium rounded-lg">
-                    {getSessionStatusText(getUserSessionStatus(user))}
-                  </Badge>
-                  <span className="text-sm text-gray-600">Activo</span>
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">{formatLastLoginTime(user.lastLoginAt)}</span>
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="flex items-center justify-center space-x-2">
-                  <Button
-                    onClick={() => onEdit(user)}
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 p-0 border-blue-300 text-blue-600 hover:bg-blue-50"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={() => onDelete(user.id)}
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 p-0 border-red-300 text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="bg-gray-50 px-6 py-3 text-sm font-semibold text-gray-700">Usuarios</div>
+      <VirtualList
+        height={480}
+        width={'100%'}
+        itemCount={filteredUsers.length}
+        itemSize={64}
+      >
+        {Row}
+      </VirtualList>
     </div>
   );
 
