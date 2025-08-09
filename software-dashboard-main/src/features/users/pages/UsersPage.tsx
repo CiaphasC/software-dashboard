@@ -72,70 +72,33 @@ export const UsersPage: React.FC = () => {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
-        <motion.div
-          className="space-y-6 sm:space-y-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-        >
+        <motion.div className="space-y-6 sm:space-y-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }}>
           {/* Header (con skeleton) */}
-          {loading ? (
-            HeaderSkeleton
-          ) : (
-            <motion.div
-            className="text-center py-4 sm:py-8"
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-                    <motion.div 
-              className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4 sm:mb-6"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-                        <motion.div 
-                className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-500 via-indigo-500 to-blue-600 text-white shadow-2xl relative overflow-hidden"
-                whileHover={{ rotate: 3, scale: 1.08 }}
-                          animate={{ 
-                            boxShadow: [
-                    "0 20px 40px rgba(59, 130, 246, 0.4)",
-                    "0 20px 40px rgba(99, 102, 241, 0.5)",
-                    "0 20px 40px rgba(37, 99, 235, 0.4)",
-                    "0 20px 40px rgba(59, 130, 246, 0.4)"
-                  ]
-                }}
-                transition={{ duration: 4, repeat: Infinity }}
-              >
-                <Users className="h-8 w-8 sm:h-12 sm:w-12" />
-                    </motion.div>
-              
-              <div className="text-center sm:text-left">
-                <motion.h1 
-                  className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                >
-                  Gestión de Usuarios
-                </motion.h1>
-                <motion.p 
-                  className="text-lg sm:text-xl text-gray-600"
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.6 }}
-                >
-                  Administra usuarios del sistema y solicitudes de registro
-                </motion.p>
-              </div>
+          {loading ? HeaderSkeleton : (
+            <motion.div className="text-center py-4 sm:py-8" initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
+              <motion.div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4 sm:mb-6" whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+                <motion.div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-500 via-indigo-500 to-blue-600 text-white shadow-2xl relative overflow-hidden" whileHover={{ rotate: 3, scale: 1.08 }} animate={{ boxShadow: [
+                  '0 20px 40px rgba(59, 130, 246, 0.4)',
+                  '0 20px 40px rgba(99, 102, 241, 0.5)',
+                  '0 20px 40px rgba(37, 99, 235, 0.4)',
+                  '0 20px 40px rgba(59, 130, 246, 0.4)'
+                ] }} transition={{ duration: 4, repeat: Infinity }}>
+                  <Users className="h-8 w-8 sm:h-12 sm:w-12" />
+                </motion.div>
+                <div className="text-center sm:text-left">
+                  <motion.h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.4 }}>
+                    Gestión de Usuarios
+                  </motion.h1>
+                  <motion.p className="text-lg sm:text-xl text-gray-600" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.6 }}>
+                    Administra usuarios del sistema y solicitudes de registro
+                  </motion.p>
+                </div>
+              </motion.div>
             </motion.div>
           )}
 
           {/* Panel de gestión de usuarios */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.0 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 1.0 }}>
             <UsersManagementPanel
               users={users}
               pendingUsers={pendingUsers}
@@ -146,7 +109,6 @@ export const UsersPage: React.FC = () => {
               onReject={handleRejectUser}
               onNewUser={openForm}
               onRefresh={() => {
-                // Fuerza recarga sin bloquear la UI
                 import('@/shared/store').then(({ useUsersStore }) => {
                   useUsersStore.getState().setCurrentPage(1);
                   useUsersStore.getState().loadUsers();
@@ -164,7 +126,7 @@ export const UsersPage: React.FC = () => {
             onCancel={closeForm}
           />
         </motion.div>
-          </div>
+      </div>
     </div>
   );
 };
