@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Requirement, RequirementStatus, Priority, RequirementType } from '@/shared/types/common.types';
-import { getStatusColor, getPriorityColor, getStatusText, getPriorityText } from '@/shared/utils/utils';
+import { getStatusColor, getStatusText, getPriorityColor, getPriorityText, getTypeIcon } from '@/shared/utils/formatters';
 import { formatDate } from '@/shared/utils/dateUtils';
 import { GenericTable, type TableConfig } from '@/shared/components/ui/GenericTable';
 
@@ -111,10 +111,11 @@ export const RequirementsTable: React.FC<RequirementsTableProps> = ({
         icon: <Settings className="h-4 w-4" />,
         render: (requirement) => {
           const typeIcons = {
-            [RequirementType.DOCUMENT]: <FileText className="h-4 w-4" />,
-            [RequirementType.EQUIPMENT]: <Shield className="h-4 w-4" />,
+            [RequirementType.DOCUMENT]: getTypeIcon('other'),
+            [RequirementType.HARDWARE]: getTypeIcon('hardware'),
+            [RequirementType.SOFTWARE]: getTypeIcon('software'),
             [RequirementType.SERVICE]: <CheckCircle className="h-4 w-4" />,
-            [RequirementType.OTHER]: <AlertTriangle className="h-4 w-4" />,
+            [RequirementType.OTHER]: getTypeIcon('other'),
           };
           
           return (
@@ -197,11 +198,12 @@ export const RequirementsTable: React.FC<RequirementsTableProps> = ({
     typeConfig: {
       getIcon: (type) => {
         const typeIcons = {
-          [RequirementType.DOCUMENT]: <FileText className="h-4 w-4" />,
-          [RequirementType.EQUIPMENT]: <Shield className="h-4 w-4" />,
-          [RequirementType.SERVICE]: <CheckCircle className="h-4 w-4" />,
-          [RequirementType.OTHER]: <AlertTriangle className="h-4 w-4" />,
-        };
+            [RequirementType.DOCUMENT]: getTypeIcon('other'),
+            [RequirementType.HARDWARE]: getTypeIcon('hardware'),
+            [RequirementType.SOFTWARE]: getTypeIcon('software'),
+            [RequirementType.SERVICE]: <CheckCircle className="h-4 w-4" />,
+            [RequirementType.OTHER]: getTypeIcon('other'),
+          };
         return typeIcons[type as RequirementType] || <FileText className="h-4 w-4" />;
       },
     },

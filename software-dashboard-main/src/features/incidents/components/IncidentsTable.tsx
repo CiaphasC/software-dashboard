@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/Badge';
 import { IncidentType, IncidentStatus, Priority } from '@/shared/types/common.types';
-import { getStatusColor, getPriorityColor, getStatusText, getPriorityText } from '@/shared/utils/utils';
+import { getStatusColor, getPriorityColor, getStatusText, getPriorityText } from '@/shared/utils/formatters';
 import { formatDate, formatDateTime } from '@/shared/utils/dateUtils';
 import { GenericTable, type TableConfig, type TableItem } from '@/shared/components/ui/GenericTable';
 import type { IncidentDomain } from '@/shared/domain/incident';

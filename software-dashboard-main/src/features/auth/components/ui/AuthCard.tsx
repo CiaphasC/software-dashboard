@@ -31,82 +31,43 @@ const AuthCard: React.FC<AuthCardProps> = ({
   // Animaciones GSAP para el card
   useEffect(() => {
     let ctx: any;
+    let onMove: ((e: MouseEvent) => void) | null = null;
+    let onLeave: (() => void) | null = null;
     (async () => {
       const { gsap } = await import('gsap');
       ctx = gsap.context(() => {
-        // Timeline principal
         const masterTl = gsap.timeline();
-
-        // Animación del logo muy sutil
         if (logoRef.current) {
-          gsap.set(logoRef.current, {
-            rotationY: -30, // Reducido de -90 a -30
-            rotationX: 15, // Reducido de 45 a 15
-            scale: 0.8, // Cambiado de 0 a 0.8
-            transformPerspective: 800
-          });
-
-          masterTl.to(logoRef.current, {
-            rotationY: 0,
-            rotationX: 0,
-            scale: 1,
-            duration: 0.8, // Reducido de 1.5 a 0.8
-            ease: "power2.out", // Cambiado de "back.out(1.7)" a "power2.out"
-            delay: 0.2 // Reducido de 0.3 a 0.2
-          });
-
-          // Efecto de brillo 3D continuo muy sutil
-          gsap.to(logoRef.current.querySelector('.shine-3d'), {
-            x: "200%",
-            duration: 4, // Aumentado de 3 a 4 para que sea más lento
-            repeat: -1,
-            ease: "power2.inOut",
-            delay: 1.5 // Reducido de 2 a 1.5
-          });
+          gsap.set(logoRef.current, { rotationY: -30, rotationX: 15, scale: 0.8, transformPerspective: 800 });
+          masterTl.to(logoRef.current, { rotationY: 0, rotationX: 0, scale: 1, duration: 0.8, ease: 'power2.out', delay: 0.2 });
+          gsap.to(logoRef.current.querySelector('.shine-3d'), { x: '200%', duration: 4, repeat: -1, ease: 'power2.inOut', delay: 1.5 });
         }
-
-        // Efecto de profundidad en el card
         if (cardRef.current) {
-          gsap.set(cardRef.current, {
-            transformPerspective: 1000,
-            transformOrigin: "center center"
-          });
-
-          // Efecto de hover 3D muy sutil (reducido significativamente)
-          cardRef.current.addEventListener('mousemove', (e) => {
+          gsap.set(cardRef.current, { transformPerspective: 1000, transformOrigin: 'center center' });
+          onMove = (e: MouseEvent) => {
             const rect = cardRef.current!.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            
             const centerX = rect.width / 2;
             const centerY = rect.height / 2;
-            
-            // Reducir la sensibilidad drásticamente para movimiento mínimo
-            const rotateX = (y - centerY) / 100; // Cambiado de 25 a 100
-            const rotateY = (centerX - x) / 100; // Cambiado de 25 a 100
-            
-            gsap.to(cardRef.current, {
-              rotationX: rotateX,
-              rotationY: rotateY,
-              duration: 0.3, // Reducido de 0.5 a 0.3
-              ease: "power2.out"
-            });
-          });
-
-          cardRef.current.addEventListener('mouseleave', () => {
-            gsap.to(cardRef.current, {
-              rotationX: 0,
-              rotationY: 0,
-              duration: 0.5, // Reducido de 0.8 a 0.5
-              ease: "power2.out"
-            });
-          });
+            const rotateX = (y - centerY) / 100;
+            const rotateY = (centerX - x) / 100;
+            gsap.to(cardRef.current, { rotationX: rotateX, rotationY: rotateY, duration: 0.3, ease: 'power2.out' });
+          };
+          onLeave = () => { gsap.to(cardRef.current, { rotationX: 0, rotationY: 0, duration: 0.5, ease: 'power2.out' }); };
+          cardRef.current.addEventListener('mousemove', onMove);
+          cardRef.current.addEventListener('mouseleave', onLeave);
         }
-
       }, cardRef);
     })();
 
-    return () => ctx && ctx.revert();
+    return () => {
+      if (cardRef.current) {
+        if (onMove) cardRef.current.removeEventListener('mousemove', onMove);
+        if (onLeave) cardRef.current.removeEventListener('mouseleave', onLeave);
+      }
+      ctx && ctx.revert();
+    };
   }, []);
 
   return (
