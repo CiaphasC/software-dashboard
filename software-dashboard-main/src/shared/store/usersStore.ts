@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { create } from 'zustand';
+import { logger } from '@/shared/utils/logger';
 import { authService } from '@/shared/services/supabase';
 import type { CreateUserData, UpdateUserData } from '@/shared/services/supabase';
 import { usersRepository } from '@/shared/repositories/UsersRepository';
@@ -151,6 +152,7 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
         loading: false,
         error: error instanceof Error ? error.message : 'Error al cargar usuarios'
       });
+      logger.error('Error al cargar usuarios', (error as Error).message)
     }
   },
 
@@ -223,7 +225,7 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
       // Mapear a tipos de la aplicación
       return pendingRequests.map(mapProfileToUser);
     } catch (error) {
-      console.error('Error loading pending users:', error);
+      logger.error('Error loading pending users:', (error as Error).message);
       throw error;
     }
   },
@@ -233,7 +235,7 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
       await authService.approveRegistrationRequest(pendingUserId, approvedBy, roleName);
       await get().loadUsers(); // Recargar lista
     } catch (error) {
-      console.error('Error approving pending user:', error);
+      logger.error('Error approving pending user:', (error as Error).message);
       throw error;
     }
   },
@@ -242,7 +244,7 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
     try {
       await authService.rejectRegistrationRequest(pendingUserId, reason);
     } catch (error) {
-      console.error('Error rejecting pending user:', error);
+      logger.error('Error rejecting pending user:', (error as Error).message);
       throw error;
     }
   },

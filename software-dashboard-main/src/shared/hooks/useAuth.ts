@@ -5,6 +5,7 @@
 
 import { useAuthStore } from '@/shared/store';
 import { useCallback, useEffect } from 'react';
+import { logger } from '@/shared/utils/logger'
 import { authService } from '@/shared/services/supabase';
 
 // =============================================================================
@@ -27,7 +28,7 @@ export const useAuth = () => {
           auth.setUser(currentUser);
         }
       } catch (error) {
-        console.error('Error initializing session:', error);
+        logger.error('Error initializing session:', (error as Error).message);
         auth.logout();
       }
     };
@@ -47,7 +48,7 @@ export const useAuth = () => {
       // Limpiar estado local
       auth.logout();
     } catch (error) {
-      console.error('Error during logout:', error);
+      logger.error('Error during logout:', (error as Error).message);
       // Limpiar estado local incluso si hay error
       auth.logout();
     }
@@ -79,7 +80,7 @@ export const useAuth = () => {
     try {
       await auth.refreshSession();
     } catch (error) {
-      console.error('Error refreshing session:', error);
+      logger.error('Error refreshing session:', (error as Error).message);
       logout();
     }
   }, [auth, logout]);
@@ -92,7 +93,7 @@ export const useAuth = () => {
     try {
       await auth.login(email, password);
     } catch (error) {
-      console.error('Error during login:', error);
+      logger.error('Error during login:', (error as Error).message);
       throw error;
     }
   }, [auth]);
@@ -107,7 +108,7 @@ export const useAuth = () => {
     try {
       await auth.register(userData);
     } catch (error) {
-      console.error('Error during registration:', error);
+      logger.error('Error during registration:', (error as Error).message);
       throw error;
     }
   }, [auth]);

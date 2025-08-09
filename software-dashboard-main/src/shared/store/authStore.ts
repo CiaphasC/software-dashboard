@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authService, type AuthUser } from '@/shared/services/supabase';
+import { logger } from '@/shared/utils/logger';
 
 // =============================================================================
 // AUTH STATE - Estado de autenticación
@@ -101,6 +102,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             loading: false,
             error: error instanceof Error ? error.message : 'Error de autenticación'
           });
+          logger.error('Error de autenticación', (error as Error).message)
           throw error;
         }
       },
@@ -110,7 +112,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           // Llamar al servicio de autenticación para hacer logout
           await authService.logout();
         } catch (error) {
-          console.error('Error en logout:', error);
+          logger.error('Error en logout:', (error as Error).message);
         } finally {
           // Limpiar completamente el estado de autenticación
           set({
@@ -134,6 +136,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             loading: false,
             error: error instanceof Error ? error.message : 'Error en el registro'
           });
+          logger.error('Error en el registro', (error as Error).message)
           throw error;
         }
       },

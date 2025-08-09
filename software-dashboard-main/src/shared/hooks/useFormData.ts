@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/shared/utils/logger'
 import { dataService, edgeFunctionsService } from '@/shared/services/supabase';
 import type { Department } from '@/shared/services/supabase/types';
 
@@ -53,7 +54,7 @@ export const useFormData = <T>({
       }
     } catch (error) {
       if (isMounted) {
-        console.error('Error cargando datos:', error);
+        logger.error('Error cargando datos:', (error as Error).message);
         setState(prev => ({ 
           ...prev, 
           loading: false, 
@@ -238,7 +239,7 @@ export const useCachedFormData = <T>(
       }
     } catch (error) {
       if (isMounted) {
-        console.error('Error cargando datos:', error);
+        logger.error('Error cargando datos:', (error as Error).message);
         setState(prev => ({ 
           ...prev, 
           loading: false, 

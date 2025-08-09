@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
+import { logger } from '@/shared/utils/logger';
 import { useAuthStore } from '@/shared/store';
 import { edgeFunctionsService, type CreateIncidentData } from '@/shared/services/supabase';
 import {
@@ -136,8 +137,8 @@ export const useIncidentForm = ({
     
     setIsSubmitting(true);
     try {
-      console.log('=== FORM SUBMIT STARTED ===');
-      console.log('Form data:', data);
+      logger.debug('=== FORM SUBMIT STARTED ===');
+      logger.debug(`Form data: ${JSON.stringify(data)}`);
       
       // Validar que affectedArea no esté vacío
       if (!data.affectedArea || data.affectedArea.trim() === '') {
@@ -154,7 +155,7 @@ export const useIncidentForm = ({
         assigned_to: data.assignedTo && data.assignedTo !== user?.id ? data.assignedTo : null,
       };
       
-      console.log('Edge function data:', edgeFunctionData);
+      logger.debug(`Edge function data: ${JSON.stringify(edgeFunctionData)}`);
       
       // Llamar al servicio correspondiente
       if (isEdit) {
@@ -167,7 +168,7 @@ export const useIncidentForm = ({
       reset();
       onSuccess?.();
     } catch (error) {
-      console.error('Error submitting incident:', error);
+      logger.error('Error submitting incident:', (error as Error).message);
       throw error;
     } finally {
       setIsSubmitting(false);
