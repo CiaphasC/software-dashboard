@@ -3,14 +3,12 @@
 // Autenticación con Supabase Auth
 // =============================================================================
 
-import { supabase, supabaseAdmin } from './client'
+import { supabase } from './client'
 import { logger } from '@/shared/utils/logger'
 import type { 
   Profile, 
-  RegistrationRequest, 
   ProfileWithRole,
   RegistrationRequestWithAdmin,
-  Inserts,
   Updates 
 } from './types'
 
@@ -294,7 +292,7 @@ export class AuthService {
       if (!session) throw new Error('No hay sesión activa');
 
       const { HttpClient } = await import('@/shared/services/http/httpClient');
-      const client = new httpClient.HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
+      const client = new HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
       const result = await client.request<{ success: boolean; user: { id: string } }>('create-user-ts', {
         method: 'POST',
         body: {
@@ -310,8 +308,8 @@ export class AuthService {
           apikey: import.meta.env.VITE_SUPABASE_ANON_KEY
         }
       });
-      if (!result.success) throw new Error('Error creando usuario');
-      const profile = await this.getProfile(result.user.id);
+      if (!result.ok || !result.data?.success) throw new Error('Error creando usuario');
+      const profile = await this.getProfile(result.data.user.id);
       if (!profile) throw new Error('Error obteniendo perfil del usuario creado');
       return profile;
     } catch (error) {
@@ -328,8 +326,8 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
-      const { httpClient } = await import('@/shared/services/http/httpClient');
-      const client = new httpClient.HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
+      const { HttpClient } = await import('@/shared/services/http/httpClient');
+      const client = new HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
       const result = await client.request<{ success: boolean; user: Profile }>('update-user-ts', {
         method: 'POST',
         body: { userId, updates },
@@ -338,8 +336,8 @@ export class AuthService {
           apikey: import.meta.env.VITE_SUPABASE_ANON_KEY
         }
       });
-      if (!result.success) throw new Error('Error actualizando usuario');
-      return result.user;
+      if (!result.ok || !result.data?.success) throw new Error('Error actualizando usuario');
+      return result.data.user;
     } catch (error) {
       logger.error('❌ Error actualizando usuario:', (error as Error).message)
       throw error;
@@ -354,8 +352,8 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
-      const { httpClient } = await import('@/shared/services/http/httpClient');
-      const client = new httpClient.HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
+      const { HttpClient } = await import('@/shared/services/http/httpClient');
+      const client = new HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
       const result = await client.request<{ success: boolean }>('delete-user-ts', {
         method: 'POST',
         body: { userId },
@@ -364,7 +362,7 @@ export class AuthService {
           apikey: import.meta.env.VITE_SUPABASE_ANON_KEY
         }
       });
-      if (!result.success) throw new Error('Error eliminando usuario');
+      if (!result.ok || !result.data?.success) throw new Error('Error eliminando usuario');
     } catch (error) {
       logger.error('❌ Error eliminando usuario:', (error as Error).message)
       throw error;
@@ -448,7 +446,7 @@ export class AuthService {
       }
 
       // 🔑 CREAR USUARIO REAL VIA EDGE FUNCTION (usa Service Role en el servidor)
-      const { httpClient } = await import('@/shared/services/http/httpClient');
+      const { HttpClient } = await import('@/shared/services/http/httpClient');
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
@@ -483,7 +481,7 @@ export class AuthService {
       });
 
       if (!createRes.ok || !createRes.data?.success || !createRes.data.user?.id) {
-        throw new Error(createRes.data?.error || 'Error creando usuario (Edge Function)');
+        throw new Error('Error creando usuario (Edge Function)');
       }
 
       // Obtener el ID del rol final
