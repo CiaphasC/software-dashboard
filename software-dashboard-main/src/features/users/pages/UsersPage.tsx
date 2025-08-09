@@ -129,7 +129,6 @@ export const UsersPage: React.FC = () => {
               </div>
             </motion.div>
           )}
-        </motion.div>
 
           {/* Panel de gestión de usuarios */}
           <motion.div
