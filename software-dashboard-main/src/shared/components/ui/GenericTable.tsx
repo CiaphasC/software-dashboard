@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FixedSizeList as VirtualList } from 'react-window';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MoreHorizontal, Eye, Edit, Trash2, Download, Filter,
@@ -58,6 +59,14 @@ export interface TableConfig<T extends TableItem> {
     render?: (item: T) => React.ReactNode;
     mobile?: boolean;
   }[];
+  
+  // Virtualización opcional para tablas grandes (sólo vista 'table')
+  virtualization?: {
+    enabled?: boolean;
+    threshold?: number; // Número de items a partir del cual activar
+    height?: number;    // Alto del viewport virtualizado
+    rowHeight?: number; // Alto de cada fila
+  };
   
   // Configuración de acciones
   actions: {
@@ -432,6 +441,97 @@ const DesktopTable = <T extends TableItem>({
   );
 };
 
+// Versión virtualizada para datasets muy grandes
+const VirtualDesktopTable = <T extends TableItem>({
+  items,
+  config,
+}: {
+  items: T[];
+  config: TableConfig<T>;
+}) => {
+  const { theme, columns, actions } = config;
+  const height = config.virtualization?.height ?? 480;
+  const rowHeight = config.virtualization?.rowHeight ?? 64;
+
+  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const item = items[index];
+    return (
+      <div style={style} className={`hover:bg-gradient-to-r hover:from-${theme.primaryColor}-50/50 hover:to-${theme.secondaryColor}-50/30 transition-all duration-300 cursor-pointer group`}
+        onClick={() => actions.onItemClick(item)}
+      >
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] items-stretch px-6" style={{ height: rowHeight }}>
+          {columns.map((column) => (
+            <div key={String(column.key)} className="flex items-center">
+              {column.render ? (
+                <div className="w-full">{column.render(item)}</div>
+              ) : (
+                <div className={`font-bold text-gray-900 group-hover:text-${theme.primaryColor}-700 transition-colors text-base truncate`}>
+                  {item[column.key] instanceof Date ? formatDate(item[column.key]) : (item[column.key] ? String(item[column.key]) : 'Sin datos')}
+                </div>
+              )}
+            </div>
+          ))}
+          <div className="flex items-center gap-2 justify-start">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`p-2.5 hover:bg-${theme.primaryColor}-50 hover:text-${theme.primaryColor}-600 transition-all duration-300 rounded-xl`}
+              onClick={(e) => { e.stopPropagation(); actions.onView(item); }}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2.5 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 rounded-xl"
+              onClick={(e) => { e.stopPropagation(); actions.onEdit(item); }}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2.5 hover:bg-red-50 hover:text-red-600 transition-all duration-300 rounded-xl"
+              onClick={(e) => { e.stopPropagation(); actions.onDelete(item); }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className={`overflow-hidden rounded-3xl border border-${theme.borderColor} bg-gradient-to-br from-white via-${theme.primaryColor}-50/20 to-white shadow-2xl backdrop-blur-sm`}>
+      {/* Encabezado */}
+      <div className={`hidden xl:block bg-gradient-to-r from-${theme.primaryColor}-50/80 via-${theme.secondaryColor}-50/60 to-${theme.primaryColor}-50/80`}> 
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-0 px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+          {columns.map((column) => (
+            <div key={String(column.key)} className="flex items-center gap-2">
+              {column.icon}
+              {column.label}
+            </div>
+          ))}
+          <div className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Acciones
+          </div>
+        </div>
+      </div>
+      {/* Lista virtualizada */}
+      <VirtualList
+        height={height}
+        width={"100%"}
+        itemCount={items.length}
+        itemSize={rowHeight}
+      >
+        {Row}
+      </VirtualList>
+    </div>
+  );
+};
+
 // Componente principal genérico
 export const GenericTable = <T extends TableItem>({ 
   items, 
@@ -609,7 +709,9 @@ export const GenericTable = <T extends TableItem>({
             transition={{ duration: 0.4 }}
             className="hidden xl:block"
           >
-            <DesktopTable items={items} config={config} />
+            {config.virtualization?.enabled && items.length > (config.virtualization.threshold ?? 1500)
+              ? <VirtualDesktopTable items={items} config={config} />
+              : <DesktopTable items={items} config={config} />}
           </motion.div>
         ) : (
           <motion.div

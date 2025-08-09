@@ -252,6 +252,12 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
       tableView: 'Tabla',
       cardsView: 'Tarjetas',
     },
+    virtualization: {
+      enabled: true,
+      threshold: 1500,
+      height: 520,
+      rowHeight: 72,
+    },
   };
 
   return (
