@@ -13,7 +13,15 @@ import {
 import { useReportPreview } from '@/features/reports/hooks/components/useReportPreview';
 import { LoadingSpinner } from '@/shared/components/ui/LoadingSpinner';
 
-export const ReportPreview: React.FC = () => {
+interface ReportPreviewProps {
+  data?: {
+    incidents: any[];
+    requirements: any[];
+    metrics: any;
+  } | null;
+}
+
+export const ReportPreview: React.FC<ReportPreviewProps> = ({ data }) => {
   const {
     reportData,
     isLoading,
@@ -22,7 +30,7 @@ export const ReportPreview: React.FC = () => {
     recentIncidents,
     recentRequirements,
     refreshData
-  } = useReportPreview();
+  } = useReportPreview({ disabled: Boolean(data), externalData: data ?? null });
 
   // Estado de carga
   if (isLoading) {

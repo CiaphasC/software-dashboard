@@ -300,7 +300,7 @@ export const Reports: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.9 }}
           >
-            {loading ? PreviewSkeleton : <ReportPreview />}
+            {loading ? PreviewSkeleton : <ReportPreview data={reportData} />}
           </motion.div>
         </motion.div>
       </div>

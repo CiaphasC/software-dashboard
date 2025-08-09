@@ -5,7 +5,7 @@ import { useRequirementsStore } from '@/shared/store/requirementsStore';
 import { dataService } from '@/shared/services/supabase';
 import { Incident, Requirement, DashboardMetrics } from '@/shared/types/common.types';
 
-interface ReportData {
+export interface ReportData {
   incidents: Incident[];
   requirements: Requirement[];
   metrics: DashboardMetrics;
@@ -25,9 +25,9 @@ interface UseReportPreviewReturn {
   refreshData: () => Promise<void>;
 }
 
-export const useReportPreview = (): UseReportPreviewReturn => {
+export const useReportPreview = (options?: { disabled?: boolean; externalData?: ReportData | null }): UseReportPreviewReturn => {
   const [reportData, setReportData] = useState<ReportData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!options?.externalData);
   const [error, setError] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -37,6 +37,9 @@ export const useReportPreview = (): UseReportPreviewReturn => {
 
   // Función para cargar datos del reporte
   const fetchReportData = useCallback(async () => {
+    if (options?.disabled) {
+      return;
+    }
     try {
       setIsLoading(true);
       setError(null);
@@ -70,8 +73,13 @@ export const useReportPreview = (): UseReportPreviewReturn => {
 
   // Cargar datos al montar el componente
   useEffect(() => {
+    if (options?.disabled) {
+      setReportData(options.externalData ?? null);
+      setIsLoading(false);
+      return;
+    }
     fetchReportData();
-  }, [fetchReportData]);
+  }, [fetchReportData, options?.disabled, options?.externalData]);
 
   // Procesar datos del reporte
   const processedReportData = useMemo(() => {
@@ -139,8 +147,9 @@ export const useReportPreview = (): UseReportPreviewReturn => {
   // Función para refrescar datos
   const refreshData = useCallback(async () => {
     setLocalError(null);
+    if (options?.disabled) return;
     await fetchReportData();
-  }, [fetchReportData]);
+  }, [fetchReportData, options?.disabled]);
 
   // Limpiar errores locales cuando cambian los datos
   useEffect(() => {
