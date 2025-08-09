@@ -10,6 +10,7 @@ import { useAuthStore } from '@/shared/store';
 import { UsersManagementPanel } from '@/features/users/components/UsersManagementPanel';
 import { UserForm } from '@/features/users/components/UserForm';
 import { useUsersPage } from '@/features/users/hooks';
+import { LoadingScreen } from '@/shared/components/ui/LoadingSpinner';
 
 // =============================================================================
 // USERS PAGE - Componente principal
@@ -35,6 +36,14 @@ export const UsersPage: React.FC = () => {
     closeForm,
     setEditingUser
   } = useUsersPage();
+
+  // Skeleton de cabecera para primera carga
+  const HeaderSkeleton = (
+    <div className="mb-4">
+      <div className="h-8 w-56 bg-gray-200 rounded-md animate-pulse" />
+      <div className="mt-2 h-4 w-80 bg-gray-100 rounded-md animate-pulse" />
+    </div>
+  );
 
 
 
@@ -69,8 +78,11 @@ export const UsersPage: React.FC = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          {/* Header */}
-                <motion.div
+          {/* Header (con skeleton) */}
+          {loading ? (
+            HeaderSkeleton
+          ) : (
+            <motion.div
             className="text-center py-4 sm:py-8"
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -116,7 +128,8 @@ export const UsersPage: React.FC = () => {
                 </motion.p>
               </div>
             </motion.div>
-                            </motion.div>
+          )}
+        </motion.div>
 
           {/* Panel de gestión de usuarios */}
           <motion.div

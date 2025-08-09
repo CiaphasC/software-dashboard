@@ -27,12 +27,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Prefetch on mount (idle): bundles y primera página de incidencias
   useEffect(() => {
     const cb = () => {
-      // Prefetch de bundles más visitados
+      // Prefetch de bundles principales
+      import('@/features/dashboard/pages/Dashboard');
       import('@/features/incidents/pages/IncidentsPage');
       import('@/features/requirements/pages/RequirementsPage');
-      // Prefetch de datos de la primera página de incidencias
+      import('@/features/users/pages/UsersPage');
+      // Prefetch de datos primera página + métricas
       try {
         prefetchManager.prefetch('incidents:firstPage');
+        prefetchManager.prefetch('incidents:metrics');
+        prefetchManager.prefetch('requirements:firstPage');
+        prefetchManager.prefetch('requirements:metrics');
+        prefetchManager.prefetch('users:firstPage');
+        prefetchManager.prefetch('users:metrics');
       } catch {}
     };
     if ('requestIdleCallback' in window) {

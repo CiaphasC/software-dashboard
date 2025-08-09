@@ -28,6 +28,7 @@ import RequirementsTable from '@/features/requirements/components/RequirementsTa
 import { RequirementsHeader } from '@/features/requirements/components';
 import { useAuthStore } from '@/shared/store';
 import toast from 'react-hot-toast';
+import { LoadingScreen } from '@/shared/components/ui/LoadingSpinner';
 
 // Componente de partículas flotantes - Ahora usando el componente compartido
 
@@ -212,6 +213,14 @@ export const RequirementsPage: React.FC = () => {
     handleEditRequirement(requirement);
   };
 
+  // Skeleton ultra ligero (header) para primera carga
+  const HeaderSkeleton = (
+    <div className="mb-4">
+      <div className="h-8 w-56 bg-gray-200 rounded-md animate-pulse" />
+      <div className="mt-2 h-4 w-80 bg-gray-100 rounded-md animate-pulse" />
+    </div>
+  );
+
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 flex items-center justify-center">
@@ -247,8 +256,8 @@ export const RequirementsPage: React.FC = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          {/* Header modularizado */}
-          <RequirementsHeader />
+          {/* Header (con skeleton) */}
+          {loading ? HeaderSkeleton : <RequirementsHeader />}
 
           {/* Estadísticas */}
           <RequirementStats requirements={requirements} />
