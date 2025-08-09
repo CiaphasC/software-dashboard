@@ -10,6 +10,7 @@ type IntentionKey =
   | 'requirements:metrics'
   | 'users:firstPage'
   | 'users:metrics'
+  | 'reports:bundle'
 
 export const prefetchRegistry: Record<IntentionKey, () => Promise<any>> = {
   'incidents:firstPage': () => fetchWithCache('incidents:firstPage', () => incidentsRepository.list({ page: 1, limit: 20 })),
@@ -18,5 +19,6 @@ export const prefetchRegistry: Record<IntentionKey, () => Promise<any>> = {
   'requirements:metrics'  : () => fetchWithCache('requirements:metrics', () => requirementsRepository.metrics()),
   'users:firstPage': () => fetchWithCache('users:firstPage', () => usersRepository.list({ page: 1, limit: 20 })),
   'users:metrics'  : () => fetchWithCache('users:metrics', () => usersRepository.metrics()),
+  'reports:bundle': () => import('@/features/reports/pages/ReportsPage'),
 }
 

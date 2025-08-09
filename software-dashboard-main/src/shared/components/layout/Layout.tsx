@@ -32,6 +32,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       import('@/features/incidents/pages/IncidentsPage');
       import('@/features/requirements/pages/RequirementsPage');
       import('@/features/users/pages/UsersPage');
+      import('@/features/reports/pages/ReportsPage');
       // Prefetch de datos primera página + métricas
       try {
         prefetchManager.prefetch('incidents:firstPage');
@@ -40,6 +41,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         prefetchManager.prefetch('requirements:metrics');
         prefetchManager.prefetch('users:firstPage');
         prefetchManager.prefetch('users:metrics');
+        prefetchManager.prefetch('reports:bundle');
       } catch {}
     };
     if ('requestIdleCallback' in window) {

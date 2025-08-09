@@ -64,7 +64,17 @@ export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Estadísticas de usuarios con glassmorphism */}
+      {/* Skeleton ligero para estadísticas cuando loading */}
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="p-4 rounded-xl bg-white/80 border border-gray-100 shadow-sm">
+              <div className="h-4 w-28 bg-gray-200 rounded animate-pulse mb-3" />
+              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      ) : (
       <motion.div
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -72,6 +82,7 @@ export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
       >
         <UserStatsCards />
       </motion.div>
+      )}
 
       {/* Panel principal con glassmorphism y gradientes avanzados */}
       <motion.div
@@ -230,18 +241,35 @@ export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
 
                   {/* Lista de usuarios */}
                   <div className="px-4 sm:px-6 pb-4 sm:pb-6 w-full">
-                    <UsersList
-                      users={users}
-                      loading={loading}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      isAdmin={isAdmin}
-                      onNewUser={onNewUser}
-                      viewMode={viewMode}
-                      onViewModeChange={setViewMode}
-                      searchQuery={searchQuery}
-                      roleFilter={roleFilter}
-                    />
+                    {loading ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {[...Array(9)].map((_, i) => (
+                          <div key={i} className="rounded-xl border border-gray-100 bg-white/80 p-4">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse" />
+                              <div className="flex-1">
+                                <div className="h-4 w-40 bg-gray-200 rounded animate-pulse mb-2" />
+                                <div className="h-3 w-28 bg-gray-100 rounded animate-pulse" />
+                              </div>
+                            </div>
+                            <div className="h-10 w-full bg-gray-100 rounded animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <UsersList
+                        users={users}
+                        loading={loading}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        isAdmin={isAdmin}
+                        onNewUser={onNewUser}
+                        viewMode={viewMode}
+                        onViewModeChange={setViewMode}
+                        searchQuery={searchQuery}
+                        roleFilter={roleFilter}
+                      />
+                    )}
                   </div>
                 </motion.div>
               )}

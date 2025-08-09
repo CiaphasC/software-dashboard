@@ -67,26 +67,49 @@ export const Reports: React.FC = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-slate-50 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <LoadingSpinner size="lg" />
-          <motion.p
-            className="mt-4 text-gray-600 font-medium"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            Cargando datos del reporte...
-          </motion.p>
-        </motion.div>
+  // Skeletons ligeros de secciones
+  const HeaderSkeleton = (
+    <div className="text-center py-4 sm:py-8">
+      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
+        <div className="p-6 rounded-3xl bg-gray-200 animate-pulse w-16 h-16" />
+        <div className="text-center sm:text-left w-full max-w-xl">
+          <div className="h-10 w-64 bg-gray-200 rounded-md animate-pulse mb-3 mx-auto sm:mx-0" />
+          <div className="h-4 w-80 bg-gray-100 rounded-md animate-pulse mx-auto sm:mx-0" />
+        </div>
       </div>
-    );
-  }
+      <div className="h-5 w-3/4 max-w-3xl bg-gray-100 rounded-md animate-pulse mx-auto" />
+    </div>
+  );
+
+  const StatsSkeleton = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="p-4 rounded-xl bg-white/80 border border-gray-100 shadow-sm">
+          <div className="h-4 w-28 bg-gray-200 rounded animate-pulse mb-3" />
+          <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
+
+  const ConfigSkeleton = (
+    <div className="p-4 rounded-xl bg-white/80 border border-gray-100 shadow-sm space-y-3">
+      <div className="h-5 w-40 bg-gray-200 rounded animate-pulse" />
+      <div className="h-10 w-full bg-gray-100 rounded animate-pulse" />
+      <div className="h-10 w-1/2 bg-gray-100 rounded animate-pulse" />
+    </div>
+  );
+
+  const ButtonsSkeleton = (
+    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+      <div className="h-12 w-56 bg-gray-200 rounded-xl animate-pulse" />
+      <div className="h-12 w-48 bg-gray-100 rounded-xl animate-pulse" />
+    </div>
+  );
+
+  const PreviewSkeleton = (
+    <div className="w-full h-64 bg-white/80 border border-gray-100 rounded-xl animate-pulse" />
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
@@ -108,13 +131,16 @@ export const Reports: React.FC = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          {/* Header Ultra Moderno con colores neutrales - MANTENIDO EXACTAMENTE IGUAL */}
+          {/* Header con skeleton */}
           <motion.div 
             className="text-center py-4 sm:py-8"
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
+            {loading ? (
+              HeaderSkeleton
+            ) : (
             <motion.div
               className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4 sm:mb-6"
               whileHover={{ scale: 1.02 }}
@@ -219,6 +245,7 @@ export const Reports: React.FC = () => {
             >
               Genera reportes detallados en PDF, Excel y CSV con análisis completos del sistema de gestión.
             </motion.p>
+            )}
           </motion.div>
 
           {/* Estadísticas de reportes con mejor espaciado */}
@@ -227,7 +254,7 @@ export const Reports: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
           >
-            {reportData && <ReportStats reportData={reportData} />}
+            {loading ? StatsSkeleton : (reportData && <ReportStats reportData={reportData} />)}
           </motion.div>
 
           {/* Configuración del Reporte con mejor espaciado */}
@@ -236,7 +263,7 @@ export const Reports: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
           >
-            <ReportConfig onConfigChange={updateReportConfig} />
+            {loading ? ConfigSkeleton : <ReportConfig onConfigChange={updateReportConfig} />}
           </motion.div>
 
           {/* Botones de Acción mejorados */}
@@ -246,31 +273,37 @@ export const Reports: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
           >
-            <Button 
-              onClick={generateReport}
-              disabled={generating || !reportData}
-              className="bg-gradient-to-r from-slate-600 to-blue-800 hover:from-slate-700 hover:to-blue-900 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 text-sm font-medium transform hover:scale-105"
-            >
-              {generating ? (
-                <LoadingSpinner size="sm" />
-              ) : (
-                <>
-                  {reportConfig.format === 'pdf' && <FileText className="h-5 w-5" />}
-                  {reportConfig.format === 'excel' && <FileSpreadsheet className="h-5 w-5" />}
-                  {reportConfig.format === 'csv' && <FileCode className="h-5 w-5" />}
-                </>
-              )}
-              Generar Reporte {reportConfig.format.toUpperCase()}
-            </Button>
+            {loading ? (
+              ButtonsSkeleton
+            ) : (
+              <>
+                <Button 
+                  onClick={generateReport}
+                  disabled={generating || !reportData}
+                  className="bg-gradient-to-r from-slate-600 to-blue-800 hover:from-slate-700 hover:to-blue-900 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 text-sm font-medium transform hover:scale-105"
+                >
+                  {generating ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <>
+                      {reportConfig.format === 'pdf' && <FileText className="h-5 w-5" />}
+                      {reportConfig.format === 'excel' && <FileSpreadsheet className="h-5 w-5" />}
+                      {reportConfig.format === 'csv' && <FileCode className="h-5 w-5" />}
+                    </>
+                  )}
+                  Generar Reporte {reportConfig.format.toUpperCase()}
+                </Button>
 
-            <Button 
-              onClick={navigateToDashboard}
-              variant="outline" 
-              className="bg-white/90 backdrop-blur-sm border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 text-sm font-medium transform hover:scale-105"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              Volver al Dashboard
-            </Button>
+                <Button 
+                  onClick={navigateToDashboard}
+                  variant="outline" 
+                  className="bg-white/90 backdrop-blur-sm border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 text-sm font-medium transform hover:scale-105"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                  Volver al Dashboard
+                </Button>
+              </>
+            )}
           </motion.div>
 
           {/* Vista Previa con mejor espaciado */}
@@ -279,7 +312,7 @@ export const Reports: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.9 }}
           >
-            <ReportPreview />
+            {loading ? PreviewSkeleton : <ReportPreview />}
           </motion.div>
         </motion.div>
       </div>
