@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js'
+import { logger } from '@/shared/utils/logger'
 import type { Database } from './types'
 
 // =============================================================================
@@ -30,8 +31,7 @@ class SupabaseClientManager {
   private supabaseAdminClient: ReturnType<typeof createClient<Database>> | null = null;
 
   private constructor() {
-import { logger } from '@/shared/utils/logger'
-logger.debug('🔧 SupabaseClientManager: Instancia creada');
+    logger.debug('🔧 SupabaseClientManager: Instancia creada');
   }
 
   static getInstance(): SupabaseClientManager {
