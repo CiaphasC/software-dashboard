@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { FilterValues } from '@/shared/types/common.types';
 import { dataService } from '@/shared/services/supabase';
+import { logger } from '@/shared/utils/logger'
 import { requirementsRepository, type RequirementQuery } from '@/shared/repositories/RequirementsRepository';
 import type { RequirementDomain, RequirementMetricsDomain } from '@/shared/domain/requirement';
 
@@ -142,6 +143,7 @@ export const useRequirementsStore = create<RequirementsState & RequirementsActio
         loading: false,
         error: error instanceof Error ? error.message : 'Error al cargar requerimientos'
       });
+      logger.error('Error al cargar requerimientos', (error as Error).message)
     }
   },
 
@@ -157,6 +159,7 @@ export const useRequirementsStore = create<RequirementsState & RequirementsActio
         loading: false,
         error: error instanceof Error ? error.message : 'Error al crear requerimiento'
       });
+      logger.error('Error al crear requerimiento', (error as Error).message)
     }
   },
 
@@ -172,6 +175,7 @@ export const useRequirementsStore = create<RequirementsState & RequirementsActio
         loading: false,
         error: error instanceof Error ? error.message : 'Error al actualizar requerimiento'
       });
+      logger.error('Error al actualizar requerimiento', (error as Error).message)
     }
   },
 
@@ -187,6 +191,7 @@ export const useRequirementsStore = create<RequirementsState & RequirementsActio
         loading: false,
         error: error instanceof Error ? error.message : 'Error al eliminar requerimiento'
       });
+      logger.error('Error al eliminar requerimiento', (error as Error).message)
     }
   },
 

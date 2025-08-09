@@ -6,7 +6,6 @@
 import { create } from 'zustand';
 import { FilterValues } from '@/shared/types/common.types';
 import { dataService } from '@/shared/services/supabase';
-import { usePaginatedQuery } from '@/shared/hooks/usePaginatedQuery'
 import { incidentsRepository, type IncidentQuery } from '@/shared/repositories/IncidentsRepository';
 import type { IncidentDomain, IncidentMetricsDomain } from '@/shared/domain/incident';
 
@@ -106,40 +105,35 @@ export const useIncidentsStore = create<IncidentsState & IncidentsActions>()((se
       const currentPage = get().currentPage;
       const itemsPerPage = get().itemsPerPage;
 
-      const fetchPage = async (page: number, limit: number) => {
-        const query: IncidentQuery = {
-          page,
-          limit,
-          search: searchQuery,
-          filters: {
-            status: currentFilters.status as string | undefined,
-            priority: currentFilters.priority as string | undefined,
-            type: currentFilters.type as string | undefined,
-            assignedTo: currentFilters.assignedTo as string | undefined,
-            createdBy: currentFilters.createdBy as string | undefined,
-            department: currentFilters.department as string | undefined,
-            dateFrom: currentFilters.dateFrom as string | undefined,
-            dateTo: currentFilters.dateTo as string | undefined,
-          }
+      const query: IncidentQuery = {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchQuery,
+        filters: {
+          status: currentFilters.status as string | undefined,
+          priority: currentFilters.priority as string | undefined,
+          type: currentFilters.type as string | undefined,
+          assignedTo: currentFilters.assignedTo as string | undefined,
+          createdBy: currentFilters.createdBy as string | undefined,
+          department: currentFilters.department as string | undefined,
+          dateFrom: currentFilters.dateFrom as string | undefined,
+          dateTo: currentFilters.dateTo as string | undefined,
         }
-        const result = await incidentsRepository.list(query)
-        return result
       }
 
-      const { loadPage } = usePaginatedQuery(fetchPage)
-      const result = await loadPage(currentPage, itemsPerPage, get().incidents)
+      const result = await incidentsRepository.list(query)
+      const totalPages = Math.ceil(result.total / itemsPerPage)
 
-      const totalPages = Math.ceil(result.total / itemsPerPage);
-      set({
-        incidents: result.items,
+      set((state) => ({
+        incidents: currentPage === 1 ? result.items : [...state.incidents, ...result.items],
         totalItems: result.total,
         totalPages,
         hasMore: result.hasMore,
         loadedPages: result.page,
         loading: false,
         error: null
-      })
-      get().updateStats();
+      }))
+      get().updateStats()
     } catch (error) {
       set({ loading: false, error: error instanceof Error ? error.message : 'Error al cargar incidencias' })
     }
