@@ -147,6 +147,13 @@ export const UsersPage: React.FC = () => {
               onApprove={handleApproveUser}
               onReject={handleRejectUser}
               onNewUser={openForm}
+              onRefresh={() => {
+                // Fuerza recarga sin bloquear la UI
+                import('@/shared/store').then(({ useUsersStore }) => {
+                  useUsersStore.getState().setCurrentPage(1);
+                  useUsersStore.getState().loadUsers();
+                });
+              }}
               isAdmin={isAdmin}
             />
           </motion.div>

@@ -40,6 +40,7 @@ interface UsersManagementPanelProps {
   onNewUser?: () => void;
   onApprove?: (userId: string) => void;
   onReject?: (userId: string) => void;
+  onRefresh?: () => void;
 }
 
 export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
@@ -52,6 +53,7 @@ export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
   onNewUser,
   onApprove,
   onReject,
+  onRefresh,
 }) => {
   const [currentView, setCurrentView] = useState<'active' | 'pending'>('active');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
@@ -129,26 +131,39 @@ export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
                 </div>
               </div>
               
-              {/* Botón Nuevo Usuario con diseño elegante */}
-              {isAdmin && currentView === 'active' && onNewUser && (
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full sm:w-auto"
-                >
+              {/* Acciones: Actualizar y Nuevo Usuario */}
+              <div className="flex items-center gap-2">
+                {onRefresh && (
                   <Button
-                    onClick={onNewUser}
-                    variant="primary"
+                    variant="outline"
                     size="lg"
-                    className="relative bg-gradient-to-r from-slate-600 to-slate-800 hover:from-slate-700 hover:to-slate-900 text-white font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden group w-full sm:w-auto"
+                    onClick={onRefresh}
+                    className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
                   >
-                    {/* Efecto de brillo en hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
-                    <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 mr-2 relative z-10" />
-                    <span className="relative z-10 text-sm sm:text-base">Nuevo Usuario</span>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Actualizar
                   </Button>
-                </motion.div>
-              )}
+                )}
+                {isAdmin && currentView === 'active' && onNewUser && (
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full sm:w-auto"
+                  >
+                    <Button
+                      onClick={onNewUser}
+                      variant="primary"
+                      size="lg"
+                      className="relative bg-gradient-to-r from-slate-600 to-slate-800 hover:from-slate-700 hover:to-slate-900 text-white font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden group w-full sm:w-auto"
+                    >
+                      {/* Efecto de brillo en hover */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
+                      <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 mr-2 relative z-10" />
+                      <span className="relative z-10 text-sm sm:text-base">Nuevo Usuario</span>
+                    </Button>
+                  </motion.div>
+                )}
+              </div>
             </div>
           </CardHeader>
 
