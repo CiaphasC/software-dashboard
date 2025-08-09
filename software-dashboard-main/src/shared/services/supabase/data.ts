@@ -635,6 +635,14 @@ logger.error('❌ Error actualizando reporte:', error)
    */
   async getDashboardMetrics(): Promise<DashboardMetrics> {
     try {
+      // Cache simple en memoria para evitar repetir la RPC en ventanas cortas
+      const cacheKey = 'metrics:dashboard';
+      const cached = (globalThis as any).__metrics_cache__?.get(cacheKey);
+      const now = Date.now();
+      if (cached && now - cached.time < 30_000) {
+        return cached.value as DashboardMetrics;
+      }
+
       const { data, error } = await supabase.rpc('get_dashboard_metrics')
 
       if (error) {
@@ -661,7 +669,7 @@ logger.error('❌ Error actualizando reporte:', error)
 
       // Asegurar que todas las propiedades existan con valores por defecto
       const metrics = data as any
-      return {
+      const value: DashboardMetrics = {
         totalIncidents: metrics.totalIncidents || 0,
         openIncidents: metrics.openIncidents || 0,
         inProgressIncidents: metrics.inProgressIncidents || 0,
@@ -675,6 +683,11 @@ logger.error('❌ Error actualizando reporte:', error)
         averageResolutionTime: metrics.averageResolutionTime || 0,
         topDepartments: Array.isArray(metrics.topDepartments) ? metrics.topDepartments : []
       }
+
+      // set cache
+      const store = ((globalThis as any).__metrics_cache__ = (globalThis as any).__metrics_cache__ || new Map());
+      store.set(cacheKey, { value, time: now });
+      return value
     } catch (error) {
 logger.error('❌ Error obteniendo métricas del dashboard:', error)
       

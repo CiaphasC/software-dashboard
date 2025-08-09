@@ -88,6 +88,10 @@ export const FloatingParticles: React.FC<FloatingParticlesProps> = ({
   // Si no está habilitado, no renderizar nada
   if (!enabled) return null;
 
+  // Evitar animaciones cuando la pestaña está oculta para ahorrar CPU
+  const isDocHidden = typeof document !== 'undefined' && document.hidden;
+  if (isDocHidden) return null;
+
   // Generar partículas principales
   const mainParticles = Array.from({ length: mainCount }).map((_, i) => ({
     key: i,

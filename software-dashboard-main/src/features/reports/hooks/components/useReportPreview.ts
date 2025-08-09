@@ -42,8 +42,8 @@ export const useReportPreview = (): UseReportPreviewReturn => {
       setError(null);
       setLocalError(null);
 
-      // Cargar datos de incidencias y requerimientos usando los stores
-      await Promise.all([
+      // Cargar en paralelo pero no bloquear si alguno ya está en curso/caché
+      await Promise.allSettled([
         loadIncidents(),
         loadRequirements()
       ]);

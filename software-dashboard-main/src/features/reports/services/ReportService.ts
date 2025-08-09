@@ -2,9 +2,7 @@
 // REPORT SERVICE - Servicio unificado para generación de reportes
 // =============================================================================
 
-import { PDFReportGenerator } from './generators/PDFReportGenerator';
-import { ExcelReportGenerator } from './generators/ExcelReportGenerator';
-import { CSVReportGenerator } from './generators/CSVReportGenerator';
+// Generadores se cargan bajo demanda para reducir el peso inicial del bundle
 import { saveAs } from 'file-saver';
 import { logger } from '@/shared/utils/logger'
 
@@ -28,14 +26,32 @@ interface ReportConfig {
 export type ReportFormat = 'pdf' | 'excel' | 'csv';
 
 export class ReportService {
-  private pdfGenerator: PDFReportGenerator;
-  private excelGenerator: ExcelReportGenerator;
-  private csvGenerator: CSVReportGenerator;
+  private pdfGenerator: any | null = null;
+  private excelGenerator: any | null = null;
+  private csvGenerator: any | null = null;
 
-  constructor() {
-    this.pdfGenerator = new PDFReportGenerator();
-    this.excelGenerator = new ExcelReportGenerator();
-    this.csvGenerator = new CSVReportGenerator();
+  private async getPdfGenerator() {
+    if (!this.pdfGenerator) {
+      const { PDFReportGenerator } = await import('./generators/PDFReportGenerator');
+      this.pdfGenerator = new PDFReportGenerator();
+    }
+    return this.pdfGenerator;
+  }
+
+  private async getExcelGenerator() {
+    if (!this.excelGenerator) {
+      const { ExcelReportGenerator } = await import('./generators/ExcelReportGenerator');
+      this.excelGenerator = new ExcelReportGenerator();
+    }
+    return this.excelGenerator;
+  }
+
+  private async getCsvGenerator() {
+    if (!this.csvGenerator) {
+      const { CSVReportGenerator } = await import('./generators/CSVReportGenerator');
+      this.csvGenerator = new CSVReportGenerator();
+    }
+    return this.csvGenerator;
   }
 
   /**
@@ -48,17 +64,17 @@ export class ReportService {
 
       switch (format) {
         case 'pdf':
-          blob = await this.pdfGenerator.generate(data, config);
+          blob = await (await this.getPdfGenerator()).generate(data, config);
           filename = `${config.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
           break;
         
         case 'excel':
-          blob = await this.excelGenerator.generate(data, config);
+          blob = await (await this.getExcelGenerator()).generate(data, config);
           filename = `${config.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
           break;
         
         case 'csv':
-          blob = await this.csvGenerator.generate(data, config);
+          blob = await (await this.getCsvGenerator()).generate(data, config);
           filename = `${config.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
           break;
         

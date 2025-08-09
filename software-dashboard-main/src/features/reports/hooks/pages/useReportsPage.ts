@@ -51,8 +51,8 @@ export const useReportsPage = (): UseReportsPageReturn => {
       setLoading(true);
       setError(null);
 
-      // Cargar datos de incidencias y requerimientos usando los stores
-      await Promise.all([
+      // Cargar datos en paralelo y sin duplicar trabajo si ya hay cache en stores
+      await Promise.allSettled([
         loadIncidents(),
         loadRequirements()
       ]);
