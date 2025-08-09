@@ -27,12 +27,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Prefetch on mount (idle): bundles y primera página de incidencias
   useEffect(() => {
     const cb = () => {
-      // Prefetch de bundles principales
-      import('@/features/dashboard/pages/Dashboard');
-      import('@/features/incidents/pages/IncidentsPage');
-      import('@/features/requirements/pages/RequirementsPage');
-      import('@/features/users/pages/UsersPage');
-      import('@/features/reports/pages/ReportsPage');
+      // Prefetch de bundles principales (silenciar errores intermitentes de Vite)
+      void import('@/features/dashboard/pages/Dashboard').catch(() => undefined);
+      void import('@/features/incidents/pages/IncidentsPage').catch(() => undefined);
+      void import('@/features/requirements/pages/RequirementsPage').catch(() => undefined);
+      void import('@/features/users/pages/UsersPage').catch(() => undefined);
+      void import('@/features/reports/pages/ReportsPage').catch(() => undefined);
       // Prefetch de datos primera página + métricas
       try {
         prefetchManager.prefetch('incidents:firstPage');

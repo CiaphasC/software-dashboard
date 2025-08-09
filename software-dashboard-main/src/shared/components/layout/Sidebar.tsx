@@ -29,25 +29,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const prefetchBundle = (path: string) => {
     switch (path) {
       case '/dashboard':
-        import('@/features/dashboard/pages/Dashboard');
+        void import('@/features/dashboard/pages/Dashboard').catch(()=>undefined);
         break;
       case '/incidents':
-        import('@/features/incidents/pages/IncidentsPage');
+        void import('@/features/incidents/pages/IncidentsPage').catch(()=>undefined);
         break;
       case '/requirements':
-        import('@/features/requirements/pages/RequirementsPage');
+        void import('@/features/requirements/pages/RequirementsPage').catch(()=>undefined);
         break;
       case '/activities':
-        import('@/features/activities/pages/ActivitiesPage');
+        void import('@/features/activities/pages/ActivitiesPage').catch(()=>undefined);
         break;
       case '/reportes':
-        import('@/features/reports/pages/ReportsPage');
+        void import('@/features/reports/pages/ReportsPage').catch(()=>undefined);
         break;
       case '/usuarios':
-        import('@/features/users/pages/UsersPage');
+        void import('@/features/users/pages/UsersPage').catch(()=>undefined);
         break;
       case '/configuracion':
-        import('@/features/settings/pages/SettingsPage');
+        void import('@/features/settings/pages/SettingsPage').catch(()=>undefined);
         break;
     }
   }

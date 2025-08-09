@@ -22,21 +22,7 @@ import { useReportsPage } from '@/features/reports/hooks/pages/useReportsPage';
 import { ReportsFloatingParticles } from '@/shared/components/ui';
 import { ReportStats, ReportPreview, ReportConfig } from '@/features/reports/components';
 
-interface ReportData {
-  incidents: any[];
-  requirements: any[];
-  metrics: any;
-}
-
-interface ReportConfig {
-  title: string;
-  dateRange: { start: Date; end: Date };
-  type: 'incidents' | 'requirements' | 'performance' | 'comprehensive';
-  format: 'pdf' | 'excel' | 'csv';
-  includeCharts: boolean;
-  includeTables: boolean;
-  includeSummary: boolean;
-}
+// Tipos locales eliminados para evitar duplicación y posibles conflictos con imports
 
 // Componente de partículas flotantes - Ahora usando el componente compartido
 
