@@ -146,6 +146,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
               <Link
                 to={item.href}
                 onClick={onClose} // Close sidebar on mobile when clicking a link
+                onMouseDown={() => { prefetchBundle(item.href); prefetchHandlers?.onPointerEnter && prefetchHandlers.onPointerEnter(); }}
+                onTouchStart={() => { prefetchBundle(item.href); prefetchHandlers?.onPointerEnter && prefetchHandlers.onPointerEnter(); }}
                 onPointerEnter={() => { prefetchBundle(item.href); prefetchHandlers?.onPointerEnter && prefetchHandlers.onPointerEnter(); }}
                 onPointerLeave={() => { prefetchHandlers?.onPointerLeave && prefetchHandlers.onPointerLeave(); }}
                 onFocus={() => { prefetchBundle(item.href); prefetchHandlers?.onFocus && prefetchHandlers.onFocus(); }}

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '@/shared/components/layout/Sidebar';
 import { Header } from '@/shared/components/layout/Header';
 import { useSettingsStore } from '@/shared/store';
+import { prefetchManager } from '@/shared/prefetch/PrefetchManager';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -21,6 +22,24 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Prefetch on mount (idle): bundles y primera página de incidencias
+  useEffect(() => {
+    const cb = () => {
+      // Prefetch de bundles más visitados
+      import('@/features/incidents/pages/IncidentsPage');
+      import('@/features/requirements/pages/RequirementsPage');
+      // Prefetch de datos de la primera página de incidencias
+      try {
+        prefetchManager.prefetch('incidents:firstPage');
+      } catch {}
+    };
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(cb, { timeout: 2000 });
+    } else {
+      setTimeout(cb, 500);
+    }
   }, []);
 
   useEffect(() => {

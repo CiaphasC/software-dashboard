@@ -27,6 +27,7 @@ import { IncidentsFilters } from '@/features/incidents/components/IncidentsFilte
 import { useAuthStore } from '@/shared/store';
 import { transformIncidentForForm } from '@/shared/utils/utils';
 import toast from 'react-hot-toast';
+import { Skeleton } from '@/shared/components/ui/LoadingSpinner';
 import type { IncidentDomain } from '@/shared/domain/incident';
 
 // Componente de partículas flotantes - Ahora usando el componente compartido
@@ -225,6 +226,14 @@ export const Incidents: React.FC = () => {
     filterOptions,
     sentinelRef,
   } = useIncidentsPage();
+
+  // Skeleton ultra ligero para cabecera mientras carga el bundle/datos
+  const HeaderSkeleton = (
+    <div className="mb-4">
+      <div className="h-8 w-48 bg-gray-200 rounded-md animate-pulse" />
+      <div className="mt-2 h-4 w-72 bg-gray-100 rounded-md animate-pulse" />
+    </div>
+  );
 
   // Manejadores simplificados
   const handleViewIncidentModal = (incident: IncidentDomain) => {
