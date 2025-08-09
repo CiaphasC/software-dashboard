@@ -14,7 +14,6 @@ import { cn } from '@/shared/utils/utils';
 import { usePrefetchOnHover } from '@/shared/hooks/usePrefetchOnHover';
 import { useAuthStore } from '@/shared/store';
 import { Button } from '@/shared/components/ui/Button';
-import { useSettingsStore } from '@/shared/store';
 
 interface NavItem {
   name: string;
@@ -39,10 +38,10 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const location = useLocation();
   const { user } = useAuthStore();
-  const { config } = useSettingsStore();
+  // const { config } = useSettingsStore();
 
-  // Aplicar colorScheme
-  const colorScheme = config.appearance.colorScheme;
+  // Eliminar variable no usada para evitar warning
+  // const colorScheme = config.appearance.colorScheme;
 
   const filteredNavigation = navigation.filter(item => 
     user && item.roles.includes(user.role)
@@ -75,27 +74,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     }
   }
 
-  const containerVariants = {
+  const containerVariants: import('framer-motion').Variants = {
     hidden: { opacity: 0, x: -20 },
     visible: {
       opacity: 1,
       x: 0,
       transition: {
         duration: 0.4,
-        ease: "easeOut",
+        ease: 'easeOut' as any,
         staggerChildren: 0.08
       }
     }
   };
 
-  const itemVariants = {
+  const itemVariants: import('framer-motion').Variants = {
     hidden: { opacity: 0, x: -15 },
     visible: { 
       opacity: 1, 
       x: 0,
       transition: {
         duration: 0.3,
-        ease: "easeOut"
+        ease: 'easeOut' as any
       }
     }
   };
@@ -148,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           </h3>
         </div>
         
-        {filteredNavigation.map((item, index) => {
+        {filteredNavigation.map((item) => {
           // Prefetch por intención según sección
           const prefetchIntention = item.name === 'Incidencias'
             ? 'incidents:firstPage'
@@ -169,10 +168,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
               <Link
                 to={item.href}
                 onClick={onClose} // Close sidebar on mobile when clicking a link
-                onPointerEnter={(e) => { prefetchBundle(item.href); prefetchHandlers?.onPointerEnter?.(e as any); }}
-                onPointerLeave={prefetchHandlers?.onPointerLeave}
-                onFocus={(e) => { prefetchBundle(item.href); prefetchHandlers?.onFocus?.(e as any); }}
-                onBlur={prefetchHandlers?.onBlur}
+                onPointerEnter={() => { prefetchBundle(item.href); prefetchHandlers?.onPointerEnter && prefetchHandlers.onPointerEnter(); }}
+                onPointerLeave={() => { prefetchHandlers?.onPointerLeave && prefetchHandlers.onPointerLeave(); }}
+                onFocus={() => { prefetchBundle(item.href); prefetchHandlers?.onFocus && prefetchHandlers.onFocus(); }}
+                onBlur={() => { prefetchHandlers?.onBlur && prefetchHandlers.onBlur(); }}
                 className={cn(
                   'group flex items-center px-3 py-3 text-sm font-medium rounded-2xl transition-all duration-300 relative overflow-hidden',
                   isActive

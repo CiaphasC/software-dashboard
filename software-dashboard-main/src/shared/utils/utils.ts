@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 // import { es, enUS } from 'date-fns/locale';
 import currency from 'currency.js';
-import { IncidentStatus, RequirementStatus, Priority, IncidentType, RequirementType } from '@/shared/types/common.types';
+import { IncidentStatus, RequirementStatus, Priority } from '@/shared/types/common.types';
 import { useSettingsStore } from '@/shared/store';
 import type { Department } from '@/shared/services/supabase';
 
@@ -175,31 +175,19 @@ export const transformIncidentForForm = (incident: any) => {
  * Convierte datos del formulario al formato de Supabase
  */
 export const transformFormDataForSupabase = (formData: any) => {
-  console.log('🔍 transformFormDataForSupabase - formData recibido:', formData);
-  console.log('🔍 transformFormDataForSupabase - affectedArea:', formData.affectedArea);
-  console.log('🔍 transformFormDataForSupabase - affectedArea type:', typeof formData.affectedArea);
-  
   // Validar que affectedArea no sea vacío
   if (!formData.affectedArea || formData.affectedArea === '') {
-    console.error('🔍 transformFormDataForSupabase - ERROR: affectedArea está vacío');
     throw new Error('El área afectada es requerida');
   }
-  
-  const transformed = {
+  return {
     title: formData.title,
     description: formData.description,
     type: formData.type,
     priority: formData.priority,
     status: formData.status,
-    affected_area_id: formData.affectedArea, // Mantener como string, el edge function lo convertirá
+    affected_area_id: formData.affectedArea,
     assigned_to: formData.assignedTo || null,
-    // REMOVER estimated_resolution_date - se usará created_at automático
   };
-  
-  console.log('🔍 transformFormDataForSupabase - datos transformados:', transformed);
-  console.log('🔍 transformFormDataForSupabase - affected_area_id:', transformed.affected_area_id);
-  
-  return transformed;
 };
 
 /**
