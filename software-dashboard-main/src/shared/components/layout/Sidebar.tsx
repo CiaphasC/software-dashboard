@@ -1,35 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Home, 
-  AlertTriangle, 
-  FileText, 
-  BarChart3, 
-  Users, 
-  Settings,
-  X
-} from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/shared/utils/utils';
 import { usePrefetchOnHover } from '@/shared/hooks/usePrefetchOnHover';
 import { useAuthStore } from '@/shared/store';
 import { Button } from '@/shared/components/ui/Button';
 
-interface NavItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  roles: string[];
-}
-
-const navigation: NavItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home, roles: ['admin', 'technician', 'requester'] },
-  { name: 'Incidencias', href: '/incidents', icon: AlertTriangle, roles: ['admin', 'technician', 'requester'] },
-  { name: 'Requerimientos', href: '/requirements', icon: FileText, roles: ['admin', 'technician', 'requester'] },
-  { name: 'Reportes', href: '/reportes', icon: BarChart3, roles: ['admin'] },
-  { name: 'Usuarios', href: '/usuarios', icon: Users, roles: ['admin'] },
-  { name: 'Configuración', href: '/configuracion', icon: Settings, roles: ['admin'] },
-];
+import navigation from '@/shared/data/navigation'
 
 interface SidebarProps {
   onClose?: () => void;
@@ -44,7 +22,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   // const colorScheme = config.appearance.colorScheme;
 
   const filteredNavigation = navigation.filter(item => 
-    user && item.roles.includes(user.role)
+    user && item.roles.includes(user.role as 'admin' | 'technician' | 'requester')
   );
 
   // Prefetch de bundles por ruta en hover

@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { supabase } from './client'
+import { logger } from '@/shared/utils/logger'
 import { edgeFunctionsService } from './edgeFunctionsService'
 import type { 
   Incident,
@@ -92,7 +93,7 @@ export class DataService {
         total: result.total || 0
       }
     } catch (error) {
-      console.error('❌ Error obteniendo incidencias (edge):', error)
+      logger.error('❌ Error obteniendo incidencias (edge):', (error as Error).message)
       return {
         data: [],
         total: 0,
@@ -118,7 +119,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error obteniendo incidencia:', error)
+      logger.error('❌ Error obteniendo incidencia:', (error as Error).message)
       return null
     }
   }
@@ -140,7 +141,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error creando incidencia:', error)
+      logger.error('❌ Error creando incidencia:', (error as Error).message)
       throw error
     }
   }
@@ -163,7 +164,7 @@ export class DataService {
 
       return data
     } catch (error) {
-      console.error('❌ Error actualizando incidencia:', error)
+      logger.error('❌ Error actualizando incidencia:', (error as Error).message)
       throw error
     }
   }
@@ -182,7 +183,7 @@ export class DataService {
         throw new Error(error.message)
       }
     } catch (error) {
-      console.error('❌ Error eliminando incidencia:', error)
+      logger.error('❌ Error eliminando incidencia:', (error as Error).message)
       throw error
     }
   }

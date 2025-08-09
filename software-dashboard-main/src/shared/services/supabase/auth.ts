@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { supabase, supabaseAdmin } from './client'
+import { logger } from '@/shared/utils/logger'
 import type { 
   Profile, 
   RegistrationRequest, 
@@ -105,7 +106,7 @@ export class AuthService {
 
       return this.mapProfileToAuthUser(profile)
     } catch (error) {
-      console.error('❌ Error en login:', error)
+      logger.error('❌ Error en login:', (error as Error).message)
       throw error
     }
   }
@@ -134,9 +135,9 @@ export class AuthService {
         throw new Error(data?.error || 'Error desconocido en el registro');
       }
 
-      console.log('✅ Registro exitoso via Edge Function:', data.message);
+      logger.info(`✅ Registro exitoso via Edge Function: ${data.message}`)
     } catch (error) {
-      console.error('❌ Error en registro:', error);
+      logger.error('❌ Error en registro:', (error as Error).message)
       throw error;
     }
   }
@@ -151,7 +152,7 @@ export class AuthService {
         throw new Error(error.message)
       }
     } catch (error) {
-      console.error('❌ Error en logout:', error)
+      logger.error('❌ Error en logout:', (error as Error).message)
       throw error
     }
   }
@@ -170,7 +171,7 @@ export class AuthService {
       const profile = await this.getProfile(user.id)
       return profile ? this.mapProfileToAuthUser(profile) : null
     } catch (error) {
-      console.error('❌ Error obteniendo usuario actual:', error)
+      logger.error('❌ Error obteniendo usuario actual:', (error as Error).message)
       return null
     }
   }
@@ -190,7 +191,7 @@ export class AuthService {
       const profile = await this.getProfile(session.user.id)
       return profile?.is_active ?? false
     } catch (error) {
-      console.error('❌ Error verificando sesión:', error)
+      logger.error('❌ Error verificando sesión:', (error as Error).message)
       return false
     }
   }
@@ -211,13 +212,13 @@ export class AuthService {
         .single()
 
       if (error) {
-        console.error('❌ Error obteniendo perfil:', error)
+        logger.error('❌ Error obteniendo perfil:', (error as any)?.message ?? String(error))
         return null
       }
 
       return data
     } catch (error) {
-      console.error('❌ Error obteniendo perfil:', error)
+      logger.error('❌ Error obteniendo perfil:', (error as Error).message)
       return null
     }
   }
@@ -240,7 +241,7 @@ export class AuthService {
 
       return data
     } catch (error) {
-      console.error('❌ Error actualizando perfil:', error)
+      logger.error('❌ Error actualizando perfil:', (error as Error).message)
       throw error
     }
   }
@@ -255,7 +256,7 @@ export class AuthService {
         .update({ last_login_at: new Date().toISOString() })
         .eq('id', userId)
     } catch (error) {
-      console.error('❌ Error actualizando último login:', error)
+      logger.error('❌ Error actualizando último login:', (error as Error).message)
     }
   }
 
@@ -279,7 +280,7 @@ export class AuthService {
 
       return data || []
     } catch (error) {
-      console.error('❌ Error obteniendo usuarios:', error)
+      logger.error('❌ Error obteniendo usuarios:', (error as Error).message)
       throw error
     }
   }
@@ -314,7 +315,7 @@ export class AuthService {
       if (!profile) throw new Error('Error obteniendo perfil del usuario creado');
       return profile;
     } catch (error) {
-      console.error('❌ Error creando usuario:', error);
+      logger.error('❌ Error creando usuario:', (error as Error).message)
       throw error;
     }
   }
@@ -340,7 +341,7 @@ export class AuthService {
       if (!result.success) throw new Error('Error actualizando usuario');
       return result.user;
     } catch (error) {
-      console.error('❌ Error actualizando usuario:', error);
+      logger.error('❌ Error actualizando usuario:', (error as Error).message)
       throw error;
     }
   }
@@ -365,7 +366,7 @@ export class AuthService {
       });
       if (!result.success) throw new Error('Error eliminando usuario');
     } catch (error) {
-      console.error('❌ Error eliminando usuario:', error);
+      logger.error('❌ Error eliminando usuario:', (error as Error).message)
       throw error;
     }
   }
@@ -391,7 +392,7 @@ export class AuthService {
 
       return data || []
     } catch (error) {
-      console.error('❌ Error obteniendo solicitudes pendientes:', error)
+      logger.error('❌ Error obteniendo solicitudes pendientes:', (error as Error).message)
       throw error
     }
   }
@@ -412,7 +413,7 @@ export class AuthService {
 
       return count || 0
     } catch (error) {
-      console.error('❌ Error obteniendo conteo de solicitudes:', error)
+      logger.error('❌ Error obteniendo conteo de solicitudes:', (error as Error).message)
       throw error
     }
   }
@@ -443,7 +444,7 @@ export class AuthService {
       // Lógica especial: si el usuario solicitó ser solicitante, promoverlo a técnico
       if (finalRoleName === 'requester') {
         finalRoleName = 'technician';
-        console.log(`🔄 Usuario solicitante promovido automáticamente a técnico: ${request.name}`);
+        logger.info(`🔄 Usuario solicitante promovido automáticamente a técnico: ${request.name}`)
       }
 
       // 🔑 CREAR USUARIO REAL EN AUTH.USERS USANDO SUPABASE AUTH ADMIN API
@@ -520,7 +521,7 @@ export class AuthService {
       })
 
     } catch (error) {
-      console.error('❌ Error aprobando solicitud:', error)
+      logger.error('❌ Error aprobando solicitud:', (error as Error).message)
       throw error
     }
   }
@@ -540,7 +541,7 @@ export class AuthService {
         throw new Error(error.message)
       }
     } catch (error) {
-      console.error('❌ Error rechazando solicitud:', error)
+      logger.error('❌ Error rechazando solicitud:', (error as Error).message)
       throw error
     }
   }
@@ -553,7 +554,7 @@ export class AuthService {
    * Obtener ID de departamento por nombre
    */
   private async getDepartmentId(departmentShortName: string): Promise<number> {
-    console.log(`🔍 Buscando departamento con short_name: "${departmentShortName}"`);
+    logger.debug(`🔍 Buscando departamento con short_name: "${departmentShortName}"`)
     
     const { data, error } = await supabase
       .from('departments')
@@ -562,7 +563,7 @@ export class AuthService {
       .single()
 
     if (error) {
-      console.error(`❌ Error buscando departamento "${departmentShortName}":`, error);
+      logger.error(`❌ Error buscando departamento "${departmentShortName}": ${(error as Error).message}`)
       
       // Intentar buscar por nombre completo como fallback
       const { data: fallbackData, error: fallbackError } = await supabase
@@ -572,7 +573,7 @@ export class AuthService {
         .single()
       
       if (fallbackError || !fallbackData) {
-        console.error(`❌ También falló la búsqueda por nombre completo "${departmentShortName}":`, fallbackError);
+        logger.error(`❌ También falló la búsqueda por nombre completo "${departmentShortName}": ${(fallbackError as Error).message}`)
         
         // Listar todos los departamentos disponibles para depuración
         const { data: allDepartments } = await supabase
@@ -580,11 +581,11 @@ export class AuthService {
           .select('id, name, short_name')
           .order('name');
         
-        console.log('📋 Departamentos disponibles:', allDepartments);
+        logger.debug(`📋 Departamentos disponibles: ${allDepartments?.length ?? 0}`)
         throw new Error(`Departamento "${departmentShortName}" no encontrado. Departamentos disponibles: ${allDepartments?.map(d => `${d.name} (${d.short_name})`).join(', ')}`);
       }
       
-      console.log(`✅ Departamento encontrado por nombre completo: ${fallbackData.name} (${fallbackData.short_name})`);
+      logger.info(`✅ Departamento encontrado por nombre completo: ${fallbackData.name} (${fallbackData.short_name})`)
       return fallbackData.id;
     }
 
@@ -592,7 +593,7 @@ export class AuthService {
       throw new Error(`Departamento "${departmentShortName}" no encontrado`);
     }
 
-    console.log(`✅ Departamento encontrado: ${data.name} (${data.short_name})`);
+    logger.info(`✅ Departamento encontrado: ${data.name} (${data.short_name})`)
     return data.id;
   }
 
@@ -628,7 +629,7 @@ export class AuthService {
         throw new Error(error.message)
       }
     } catch (error) {
-      console.error('❌ Error cambiando contraseña:', error)
+      logger.error('❌ Error cambiando contraseña:', (error as Error).message)
       throw error
     }
   }
@@ -646,7 +647,7 @@ export class AuthService {
         throw new Error(error.message)
       }
     } catch (error) {
-      console.error('❌ Error enviando email de recuperación:', error)
+      logger.error('❌ Error enviando email de recuperación:', (error as Error).message)
       throw error
     }
   }
