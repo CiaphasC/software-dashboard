@@ -212,6 +212,13 @@ const Activities: React.FC = () => {
     }
   ];
   const loading = false;
+  // Skeleton de cabecera para primera carga
+  const HeaderSkeleton = (
+    <div className="mb-6">
+      <div className="h-8 w-56 bg-gray-200 rounded-md animate-pulse" />
+      <div className="mt-2 h-4 w-80 bg-gray-100 rounded-md animate-pulse" />
+    </div>
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterAction, setFilterAction] = useState<string>('all');
@@ -601,8 +608,8 @@ const Activities: React.FC = () => {
       </div>
       <div className="max-w-7xl mx-auto p-4 sm:p-6 relative z-10">
         <motion.div className="space-y-10" variants={containerVariants} initial="hidden" animate="visible">
-          {/* Header */}
-          <ActivitiesHeader />
+          {/* Header (con skeleton) */}
+          {loading ? HeaderSkeleton : <ActivitiesHeader />}
           {/* Filtros */}
           <ActivitiesFilters
             searchTerm={searchTerm}

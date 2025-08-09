@@ -27,6 +27,20 @@ export const Dashboard: React.FC = () => {
   // Hook personalizado para todas las animaciones del dashboard
   const animations = useDashboardAnimations();
 
+  // Skeleton de cabecera para primera carga
+  const HeaderSkeleton = (
+    <div className="py-12">
+      <div className="inline-flex items-center gap-6 mb-6">
+        <div className="p-6 rounded-3xl bg-gray-200 animate-pulse w-20 h-20" />
+        <div>
+          <div className="h-10 w-56 bg-gray-200 rounded-md animate-pulse mb-3" />
+          <div className="h-4 w-80 bg-gray-100 rounded-md animate-pulse" />
+        </div>
+      </div>
+      <div className="h-5 w-3/4 max-w-xl bg-gray-100 rounded-md animate-pulse" />
+    </div>
+  );
+
   useEffect(() => {
     if (metrics) {
       // Inicializar actividades recientes basadas en los datos
@@ -43,19 +57,21 @@ export const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
-        <motion.div
-          {...animations.loadingAnimation}
-          className="text-center"
-        >
-          <LoadingSpinner size="lg" />
-          <motion.p
-            className="mt-4 text-gray-600 font-medium"
-            {...animations.loadingTextAnimation}
-          >
-            Cargando dashboard...
-          </motion.p>
-        </motion.div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden">
+        {/* Fondo decorativo */}
+        <div className="absolute top-0 left-0 w-full h-full">
+          <div className="absolute top-20 left-10 w-80 h-80 bg-gradient-to-br from-blue-200/40 to-cyan-200/40 rounded-full blur-3xl animate-pulse" />
+          <div 
+            className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-cyan-200/40 to-teal-200/40 rounded-full blur-3xl animate-pulse" 
+            style={animations.backgroundElementStyle} 
+          />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto p-6">
+          <motion.div className="space-y-8" {...animations.containerAnimation}>
+            {HeaderSkeleton}
+          </motion.div>
+        </div>
       </div>
     );
   }
