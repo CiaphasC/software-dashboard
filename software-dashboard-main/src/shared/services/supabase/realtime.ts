@@ -26,18 +26,14 @@ export type RealtimeHandlers<T> = {
 export function subscribeTable<T extends { id: string }>(table: string, handlers: RealtimeHandlers<T>) {
   const channel = supabase.channel(`realtime:${table}`)
 
-  const safe = (fn?: (...args: any[]) => void) => (...args: any[]) => {
-    try { fn?.(...args) } catch { /* noop */ }
-  }
-
   channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table }, (payload: PostgrestInsertPayload<T>) => {
-    safe(handlers.onInsert)(payload.new)
+    handlers.onInsert?.(payload.new)
   })
   channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table }, (payload: PostgrestUpdatePayload<T>) => {
-    safe(handlers.onUpdate)(payload.new)
+    handlers.onUpdate?.(payload.new)
   })
   channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table }, (payload: PostgrestDeletePayload<T>) => {
-    safe(handlers.onDelete)({ id: payload.old.id })
+    handlers.onDelete?.({ id: payload.old.id })
   })
 
   channel.subscribe()

@@ -59,47 +59,36 @@ export const useIsRequester = () => useAuthStore((state) => state.user?.role ===
 /**
  * Selector para obtener usuarios filtrados y paginados
  */
-export const useFilteredUsers = () => useUsersStore((state) => {
-  const { users, filters, searchQuery, currentPage, itemsPerPage } = state;
-  
-  // Aplicar filtros
-  let filtered = users.filter(user => {
-    // Filtro por rol
-    if (filters.role && user.role !== filters.role) {
-      return false;
-    }
-    
-    // Filtro por departamento
-    if (filters.department && user.department !== filters.department) {
-      return false;
-    }
-    
-    // Filtro de búsqueda
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
-      const matchesName = user.name.toLowerCase().includes(searchLower);
-      const matchesEmail = user.email.toLowerCase().includes(searchLower);
-      const matchesDepartment = user.department.toLowerCase().includes(searchLower);
-      
-      if (!matchesName && !matchesEmail && !matchesDepartment) {
-        return false;
+export const useFilteredUsers = () => {
+  const users = useUsersStore((s) => s.users)
+  const filters = useUsersStore((s) => s.filters)
+  const searchQuery = useUsersStore((s) => s.searchQuery)
+  const currentPage = useUsersStore((s) => s.currentPage)
+  const itemsPerPage = useUsersStore((s) => s.itemsPerPage)
+
+  return React.useMemo(() => {
+    const filtered = users.filter((user) => {
+      if (filters.role && user.role !== filters.role) return false
+      if ((filters as any).department && user.department !== (filters as any).department) return false
+      if (searchQuery) {
+        const s = searchQuery.toLowerCase()
+        const name = user.name.toLowerCase().includes(s)
+        const email = user.email.toLowerCase().includes(s)
+        const dept = user.department.toLowerCase().includes(s)
+        if (!name && !email && !dept) return false
       }
+      return true
+    })
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const paginated = filtered.slice(startIndex, startIndex + itemsPerPage)
+    return {
+      users: paginated,
+      totalUsers: filtered.length,
+      currentPage,
+      totalPages: Math.ceil(filtered.length / itemsPerPage),
     }
-    
-    return true;
-  });
-  
-  // Aplicar paginación
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filtered.slice(startIndex, startIndex + itemsPerPage);
-  
-  return {
-    users: paginatedUsers,
-    totalUsers: filtered.length,
-    currentPage,
-    totalPages: Math.ceil(filtered.length / itemsPerPage)
-  };
-});
+  }, [users, filters, searchQuery, currentPage, itemsPerPage])
+}
 
 /**
  * Selector para obtener estadísticas de usuarios
@@ -127,56 +116,37 @@ export const useActiveUsers = () => useUsersStore((state) =>
 /**
  * Selector para obtener incidencias filtradas y paginadas
  */
-export const useFilteredIncidents = () => useIncidentsStore((state) => {
-  const { incidents, filters, searchQuery, currentPage, itemsPerPage } = state;
-  
-  // Aplicar filtros
-  let filtered = incidents.filter(incident => {
-    // Filtro por estado
-    if (filters.status && incident.status !== filters.status) {
-      return false;
-    }
-    
-    // Filtro por prioridad
-    if (filters.priority && incident.priority !== filters.priority) {
-      return false;
-    }
-    
-    // Filtro por tipo
-    if (filters.type && incident.type !== filters.type) {
-      return false;
-    }
-    
-    // Filtro por departamento
-    if (filters.department && incident.affectedArea !== filters.department) {
-      return false;
-    }
-    
-    // Filtro de búsqueda
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
-      const matchesTitle = incident.title.toLowerCase().includes(searchLower);
-      const matchesDescription = incident.description.toLowerCase().includes(searchLower);
-      
-      if (!matchesTitle && !matchesDescription) {
-        return false;
+export const useFilteredIncidents = () => {
+  const incidents = useIncidentsStore((s) => s.incidents)
+  const filters = useIncidentsStore((s) => s.filters)
+  const searchQuery = useIncidentsStore((s) => s.searchQuery)
+  const currentPage = useIncidentsStore((s) => s.currentPage)
+  const itemsPerPage = useIncidentsStore((s) => s.itemsPerPage)
+
+  return React.useMemo(() => {
+    const filtered = incidents.filter((incident) => {
+      if ((filters as any).status && incident.status !== (filters as any).status) return false
+      if ((filters as any).priority && incident.priority !== (filters as any).priority) return false
+      if ((filters as any).type && incident.type !== (filters as any).type) return false
+      if ((filters as any).department && (incident as any).affectedArea !== (filters as any).department) return false
+      if (searchQuery) {
+        const s = searchQuery.toLowerCase()
+        const t = incident.title.toLowerCase().includes(s)
+        const d = incident.description.toLowerCase().includes(s)
+        if (!t && !d) return false
       }
+      return true
+    })
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const paginated = filtered.slice(startIndex, startIndex + itemsPerPage)
+    return {
+      incidents: paginated,
+      totalIncidents: filtered.length,
+      currentPage,
+      totalPages: Math.ceil(filtered.length / itemsPerPage),
     }
-    
-    return true;
-  });
-  
-  // Aplicar paginación
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedIncidents = filtered.slice(startIndex, startIndex + itemsPerPage);
-  
-  return {
-    incidents: paginatedIncidents,
-    totalIncidents: filtered.length,
-    currentPage,
-    totalPages: Math.ceil(filtered.length / itemsPerPage)
-  };
-});
+  }, [incidents, filters, searchQuery, currentPage, itemsPerPage])
+}
 
 /**
  * Selector para obtener estadísticas de incidencias
@@ -204,56 +174,37 @@ export const useIncidentsByPriority = (priority: string) => useIncidentsStore((s
 /**
  * Selector para obtener requerimientos filtrados y paginados
  */
-export const useFilteredRequirements = () => useRequirementsStore((state) => {
-  const { requirements, filters, searchQuery, currentPage, itemsPerPage } = state;
-  
-  // Aplicar filtros
-  let filtered = requirements.filter(requirement => {
-    // Filtro por estado
-    if (filters.status && requirement.status !== filters.status) {
-      return false;
-    }
-    
-    // Filtro por prioridad
-    if (filters.priority && requirement.priority !== filters.priority) {
-      return false;
-    }
-    
-    // Filtro por tipo
-    if (filters.type && requirement.type !== filters.type) {
-      return false;
-    }
-    
-    // Filtro por departamento
-    if (filters.department && requirement.requestingArea !== filters.department) {
-      return false;
-    }
-    
-    // Filtro de búsqueda
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
-      const matchesTitle = requirement.title.toLowerCase().includes(searchLower);
-      const matchesDescription = requirement.description.toLowerCase().includes(searchLower);
-      
-      if (!matchesTitle && !matchesDescription) {
-        return false;
+export const useFilteredRequirements = () => {
+  const requirements = useRequirementsStore((s) => s.requirements)
+  const filters = useRequirementsStore((s) => s.filters)
+  const searchQuery = useRequirementsStore((s) => s.searchQuery)
+  const currentPage = useRequirementsStore((s) => s.currentPage)
+  const itemsPerPage = useRequirementsStore((s) => s.itemsPerPage)
+
+  return React.useMemo(() => {
+    const filtered = requirements.filter((req) => {
+      if ((filters as any).status && req.status !== (filters as any).status) return false
+      if ((filters as any).priority && req.priority !== (filters as any).priority) return false
+      if ((filters as any).type && req.type !== (filters as any).type) return false
+      if ((filters as any).department && (req as any).requestingArea !== (filters as any).department) return false
+      if (searchQuery) {
+        const s = searchQuery.toLowerCase()
+        const t = req.title.toLowerCase().includes(s)
+        const d = req.description.toLowerCase().includes(s)
+        if (!t && !d) return false
       }
+      return true
+    })
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const paginated = filtered.slice(startIndex, startIndex + itemsPerPage)
+    return {
+      requirements: paginated,
+      totalRequirements: filtered.length,
+      currentPage,
+      totalPages: Math.ceil(filtered.length / itemsPerPage),
     }
-    
-    return true;
-  });
-  
-  // Aplicar paginación
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedRequirements = filtered.slice(startIndex, startIndex + itemsPerPage);
-  
-  return {
-    requirements: paginatedRequirements,
-    totalRequirements: filtered.length,
-    currentPage,
-    totalPages: Math.ceil(filtered.length / itemsPerPage)
-  };
-});
+  }, [requirements, filters, searchQuery, currentPage, itemsPerPage])
+}
 
 /**
  * Selector para obtener estadísticas de requerimientos

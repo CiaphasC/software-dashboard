@@ -21,7 +21,7 @@ interface AuthInitializerProps {
 // =============================================================================
 
 export const AuthInitializer: React.FC<AuthInitializerProps> = ({ children }) => {
-  const { verifySession } = useAuthStore();
+  const { verifySession, isAuthenticated, user } = useAuthStore();
   const [isInitialized, setIsInitialized] = useState(false);
 
   // =============================================================================

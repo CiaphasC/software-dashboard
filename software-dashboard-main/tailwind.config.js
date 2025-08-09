@@ -5,12 +5,6 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  safelist: [
-    // Colores dinámicos usados en temas/tablas/partículas
-    { pattern: /(from|via|to|bg|text|border)-(red|rose|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|slate|gray)-(50|100|200|300|400|500|600|700|800|900)(\/([0-9]{1,2}|100))?/ },
-    // Gradientes pequeños usados con sufijos /opacidad
-    { pattern: /(from|via|to)-[a-zA-Z0-9-]+\/(10|20|30|40|50|60|70|80|90)/ },
-  ],
   theme: {
   	extend: {
   		colors: {

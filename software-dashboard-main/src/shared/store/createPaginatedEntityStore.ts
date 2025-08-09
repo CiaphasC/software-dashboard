@@ -38,6 +38,9 @@ interface CreateStoreParams<TItem, TQuery, TMetrics, TRawItem = unknown, TFilter
   list: (query: TQuery) => Promise<{ items: TRawItem[]; total: number; page: number; limit: number; hasMore: boolean }>
   metrics: () => Promise<TMetrics>
   mapToDomain?: (raw: TRawItem) => TItem
+  // Opcional: actualizar métricas automáticamente tras cada carga con throttling
+  autoUpdateStats?: boolean
+  statsThrottleMs?: number
 }
 
 export function createPaginatedEntityStore<TItem, TQuery extends { page?: number; limit?: number; search?: string; filters?: TFilters }, TMetrics, TRawItem = TItem, TFilters = Record<string, unknown>>(
@@ -49,7 +52,12 @@ export function createPaginatedEntityStore<TItem, TQuery extends { page?: number
     list,
     metrics,
     mapToDomain,
+    autoUpdateStats = true,
+    statsThrottleMs = 15_000,
   } = params
+
+  // Control de throttling para update de métricas
+  let lastStatsUpdateAt = 0
 
   return create<PaginatedStore<TItem, TQuery, TMetrics, TFilters>>((set, get) => ({
     items: [],
@@ -86,8 +94,15 @@ export function createPaginatedEntityStore<TItem, TQuery extends { page?: number
           loading: false,
           error: null,
         }))
-        // actualizar métricas al vuelo
-        get().updateStats()
+        // Actualizar métricas con throttling opcional
+        if (autoUpdateStats) {
+          const now = Date.now()
+          if (now - lastStatsUpdateAt >= statsThrottleMs) {
+            lastStatsUpdateAt = now
+            // no await para no bloquear el UI
+            void get().updateStats()
+          }
+        }
       } catch (err) {
         set({ loading: false, error: err instanceof Error ? err.message : 'Error al cargar' })
       }

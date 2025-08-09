@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { User, Lock, Zap, UserPlus } from 'lucide-react';
+import { User, Zap, UserPlus } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { useAuthStore } from '@/shared/store';
@@ -108,7 +108,20 @@ const Login: React.FC<LoginProps> = ({ onShowRegister }) => {
         ease: "power2.out"
       });
       
-      toast.error('Credenciales inválidas');
+      const msg = (error as Error)?.message || ''
+      // Mensajes más claros según causa común
+      const friendly = msg.includes('Invalid login credentials')
+        ? 'Credenciales inválidas'
+        : msg.includes('Email not confirmed')
+        ? 'Debes confirmar tu correo antes de iniciar sesión'
+        : msg.includes('FetchError') || msg.toLowerCase().includes('network')
+        ? 'Problema de conexión. Verifica tu red o el servidor'
+        : msg.includes('Failed to fetch') || msg.toLowerCase().includes('mixed content')
+        ? 'Bloqueo por contenido mixto/HTTPS. Revisa configuración de URL'
+        : msg.includes('deactivated') || msg.toLowerCase().includes('desactiv')
+        ? 'Tu cuenta está desactivada'
+        : 'No se pudo iniciar sesión';
+      toast.error(friendly);
     } finally {
       setIsLoading(false);
     }

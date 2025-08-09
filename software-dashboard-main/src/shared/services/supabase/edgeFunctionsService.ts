@@ -79,15 +79,7 @@ export interface UpdateRequirementData {
 export class EdgeFunctionsService {
   private http: HttpClient
   constructor() {
-    const baseUrl = (import.meta.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321')
-    if (!import.meta.env.DEV) {
-      const isHttp = baseUrl.startsWith('http://');
-      const isLocalhost = /localhost|127\.0\.0\.1/.test(baseUrl);
-      if (isHttp || isLocalhost) {
-        throw new Error('❌ Configuración insegura de Edge Functions en producción (URL local o HTTP)')
-      }
-    }
-    const base = baseUrl + '/functions/v1'
+    const base = (import.meta.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321') + '/functions/v1'
     this.http = new HttpClient(base)
   }
 
