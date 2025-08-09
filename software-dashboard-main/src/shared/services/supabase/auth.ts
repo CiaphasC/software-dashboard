@@ -447,26 +447,43 @@ export class AuthService {
         logger.info(`🔄 Usuario solicitante promovido automáticamente a técnico: ${request.name}`)
       }
 
-      // 🔑 CREAR USUARIO REAL EN AUTH.USERS USANDO SUPABASE AUTH ADMIN API
-      if (!supabaseAdmin) {
-        throw new Error('Cliente admin de Supabase no configurado')
-      }
-      
-      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: request.email,
-        password: request.password,
-        email_confirm: true,
-        user_metadata: {
-          name: request.name
-        }
-      })
+      // 🔑 CREAR USUARIO REAL VIA EDGE FUNCTION (usa Service Role en el servidor)
+      const { httpClient } = await import('@/shared/services/http/httpClient');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No hay sesión activa');
 
-      if (authError) {
-        throw new Error(`Error creando usuario: ${authError.message}`)
+      // Obtener short_name del departamento desde id de la solicitud
+      let deptShortName: string | null = null;
+      if (request.department_id) {
+        const { data: dept } = await supabase
+          .from('departments')
+          .select('short_name')
+          .eq('id', request.department_id)
+          .single();
+        deptShortName = dept?.short_name ?? null;
       }
 
-      if (!authUser.user) {
-        throw new Error('No se pudo crear el usuario')
+      const client = new httpClient.HttpClient((import.meta.env.VITE_SUPABASE_URL as string) + '/functions/v1');
+      const createRes = await client.request<{ success: boolean; user?: { id: string } }>('create-user-ts', {
+        method: 'POST',
+        body: {
+          name: request.name,
+          email: request.email,
+          password: request.password,
+          role: finalRoleName,
+          // La Edge Function espera short_name del departamento
+          department: deptShortName ?? request.department_short_name ?? 'general',
+          isActive: true,
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        timeoutMs: 30000,
+      });
+
+      if (!createRes.ok || !createRes.data?.success || !createRes.data.user?.id) {
+        throw new Error(createRes.data?.error || 'Error creando usuario (Edge Function)');
       }
 
       // Obtener el ID del rol final
@@ -490,7 +507,7 @@ export class AuthService {
           is_active: true,
           updated_at: new Date().toISOString()
         })
-        .eq('id', authUser.user.id)
+        .eq('id', createRes.data.user.id)
 
       if (profileError) {
         throw new Error(`Error actualizando perfil: ${profileError.message}`)
@@ -513,7 +530,7 @@ export class AuthService {
         : 'Tu solicitud de registro ha sido aprobada. Ya puedes iniciar sesión en el sistema.';
 
       await supabase.rpc('create_notification', {
-        p_user_id: authUser.user.id,
+        p_user_id: createRes.data.user.id,
         p_title: 'Cuenta Aprobada',
         p_message: notificationMessage,
         p_type: 'success',
