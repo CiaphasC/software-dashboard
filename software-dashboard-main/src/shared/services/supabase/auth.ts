@@ -66,6 +66,11 @@ export interface UpdateUserData {
 // =============================================================================
 
 export class AuthService {
+  private async getFunctionsClient() {
+    const { HttpClient } = await import('@/shared/services/http/httpClient');
+    const base = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '') + '/functions/v1';
+    return new HttpClient(base);
+  }
   // =============================================================================
   // AUTHENTICATION METHODS - Métodos de autenticación
   // =============================================================================
@@ -291,9 +296,8 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
-      const { HttpClient } = await import('@/shared/services/http/httpClient');
-      const client = new HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
-      const result = await client.request<{ success: boolean; user: { id: string } }>('create-user-ts', {
+      const client = await this.getFunctionsClient();
+      const result = await client.request<{ success: boolean; user: { id: string } }>('/create-user-ts', {
         method: 'POST',
         body: {
           name: userData.name,
@@ -326,9 +330,8 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
-      const { HttpClient } = await import('@/shared/services/http/httpClient');
-      const client = new HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
-      const result = await client.request<{ success: boolean; user: Profile }>('update-user-ts', {
+      const client = await this.getFunctionsClient();
+      const result = await client.request<{ success: boolean; user: Profile }>('/update-user-ts', {
         method: 'POST',
         body: { userId, updates },
         headers: {
@@ -352,9 +355,8 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
-      const { HttpClient } = await import('@/shared/services/http/httpClient');
-      const client = new HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
-      const result = await client.request<{ success: boolean }>('delete-user-ts', {
+      const client = await this.getFunctionsClient();
+      const result = await client.request<{ success: boolean }>('/delete-user-ts', {
         method: 'POST',
         body: { userId },
         headers: {
@@ -446,7 +448,7 @@ export class AuthService {
       }
 
       // 🔑 CREAR USUARIO REAL VIA EDGE FUNCTION (usa Service Role en el servidor)
-      const { HttpClient } = await import('@/shared/services/http/httpClient');
+      const client = await this.getFunctionsClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
@@ -461,8 +463,7 @@ export class AuthService {
         deptShortName = dept?.short_name ?? null;
       }
 
-      const client = new HttpClient((import.meta.env.VITE_SUPABASE_URL as string) + '/functions/v1');
-      const createRes = await client.request<{ success: boolean; user?: { id: string } }>('create-user-ts', {
+      const createRes = await client.request<{ success: boolean; user?: { id: string } }>('/create-user-ts', {
         method: 'POST',
         body: {
           name: request.name,
