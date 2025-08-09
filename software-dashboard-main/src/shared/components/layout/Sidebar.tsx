@@ -27,6 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
   // Prefetch de bundles por ruta en hover
   const prefetchBundle = (path: string) => {
+    const isDev = import.meta.env.DEV;
     switch (path) {
       case '/dashboard':
         void import('@/features/dashboard/pages/Dashboard').catch(()=>undefined);
@@ -41,10 +42,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         void import('@/features/activities/pages/ActivitiesPage').catch(()=>undefined);
         break;
       case '/reportes':
-        void import('@/features/reports/pages/ReportsPage').catch(()=>undefined);
+        if (!isDev) void import('@/features/reports/pages/ReportsPage').catch(()=>undefined);
         break;
       case '/usuarios':
-        void import('@/features/users/pages/UsersPage').catch(()=>undefined);
+        if (!isDev) void import('@/features/users/pages/UsersPage').catch(()=>undefined);
         break;
       case '/configuracion':
         void import('@/features/settings/pages/SettingsPage').catch(()=>undefined);
