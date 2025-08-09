@@ -1,137 +1,109 @@
 # Sistema de Gestión de Incidencias y Requerimientos
 
-Aplicación web de gestión (incidencias, requerimientos, usuarios, reportes) desarrollada con React + TypeScript y backend en Supabase (PostgreSQL + Edge Functions).
+Este proyecto es una aplicación web para registrar, consultar y administrar incidencias y requerimientos. El frontend está construido con React + TypeScript y el backend se apoya en Supabase (PostgreSQL, Auth, Edge Functions, Realtime).
 
-## 📦 Monorepo
+Importante: en el estado actual de la solución, el uso está centrado en un único usuario administrador. La gestión multi‑rol (técnico/solicitante) está prevista en el roadmap, pero no forma parte del flujo operativo actual.
 
-- `software-dashboard-main/`: Frontend (React 19, Vite, Tailwind)
-- `software-dashboard-main-backend/`: Backend (Supabase: migraciones, Edge Functions, seeds, pruebas)
+## Estructura del repositorio
 
-## ✅ Estado actual (resumen senior)
+- `software-dashboard-main/` → Frontend (React 19, Vite, Tailwind)
+- `software-dashboard-main-backend/` → Backend (Supabase: migraciones, Edge Functions, seeds y utilidades)
 
-- Autenticación con Supabase (roles: admin, technician, requester) y verificación de sesión
-- Dashboard con métricas y prefetch de datos clave
-- Incidencias y Requerimientos con filtrado/paginación, edición y métricas
-- Reportes (PDF/Excel/CSV) con generadores cargados bajo demanda y vista previa
-- Usuarios (administración, aprobaciones de registro)
-- Tiempo real (Postgres Changes) y sistema de auto-refresh centralizado (con optimizaciones)
+## Capacidades actuales
 
-## 🧱 Arquitectura (frontend)
+- Inicio de sesión con Supabase Auth (sesión persistente y verificación al arranque)
+- Panel de control con métricas agregadas
+- Gestión de Incidencias y Requerimientos: listado, filtros, paginación, edición básica
+- Reportes descargables (PDF/Excel/CSV) con vista previa y generación bajo demanda
+- Actualizaciones en tiempo real (suscripciones a cambios en BD)
 
-- Estructura por features (`features/*`), UI compartida en `shared/components/ui`
-- Estado global con Zustand y stores paginados (`createPaginatedEntityStore`) con:
-  - Throttle configurable para `updateStats` tras `load()`
-  - Carga incremental y filtros centralizados
-- Selectores derivados memoizados en `shared/store/selectors.ts` (filtros/paginación sin recalcular en cada render)
-- Prefetch manager (bundles y primeras páginas) + cache in-memory (`shared/data/fetcher.ts`)
-- Refresh centralizado con skip inteligente (formularios/modal abiertos) en `useCentralizedRefresh`
-- Realtime por tabla con handlers desacoplados (`shared/services/supabase/realtime.ts`)
-- Edge Functions encapsuladas en `edgeFunctionsService` con validación (Zod) y HttpClient con timeout/retry/backoff
-- Reportes: generadores importados dinámicamente (reduce bundle inicial) y cache de métricas 30s
-- Animaciones cuidadas (Framer Motion) con partículas pausadas si la pestaña está oculta
+Limitaciones/diseño actual
+- Operación con un único usuario administrador (no hay flujos separados por rol en UI)
+- Algunos conteos/métricas se refrescan con una cadencia optimizada para no impactar rendimiento
 
-## 🔒 Arquitectura (backend Supabase)
+## Tecnologías
 
-- Migraciones SQL y seeds en `software-dashboard-main-backend/supabase/migrations`
-- Edge Functions (TypeScript) en `software-dashboard-main-backend/supabase/functions/*`
-- RPC `get_dashboard_metrics` para métricas de dashboard
-- RLS habilitado (consultas tipadas y funciones encapsulan operaciones seguras)
+Frontend
+- React 19 + TypeScript, Vite, Tailwind
+- Zustand para estado global (stores paginados reutilizables)
+- Framer Motion para animaciones (con políticas de ahorro)
 
-## 🧰 Requisitos
+Backend (Supabase)
+- PostgreSQL + RLS, vistas y RPC para métricas
+- Edge Functions en TypeScript para operaciones de dominio
+- Realtime (Postgres Changes)
 
-- Node.js 18+ (recomendado 20+)
-- npm o pnpm
-- Cuenta de Supabase (para cloud) o Supabase CLI (para local)
+## Puesta en marcha
 
-## ⚙️ Configuración rápida
+Requisitos
+- Node 18+ (ideal 20+)
+- Cuenta de Supabase (cloud) o Supabase CLI (local)
 
-### 1) Frontend
+1) Frontend
+- Crear `software-dashboard-main/.env.local` con:
+  ```bash
+  VITE_SUPABASE_URL=https://TU-PROYECTO.supabase.co
+  VITE_SUPABASE_ANON_KEY=TU_ANON_KEY
+  # Opcional cuando se usa ngrok u otro túnel
+  VITE_PUBLIC_ALLOWED_HOSTS=tu-subdominio.ngrok-free.app
+  VITE_PUBLIC_HMR_PROTOCOL=wss
+  VITE_PUBLIC_HMR_HOST=tu-subdominio.ngrok-free.app
+  VITE_PUBLIC_HMR_PORT=443
+  ```
+- Instalar y levantar:
+  ```bash
+  cd software-dashboard-main
+  npm install
+  npm run dev
+  ```
 
-1. Crear `.env.local` en `software-dashboard-main/`:
-   ```bash
-   VITE_SUPABASE_URL=https://TU-PROYECTO.supabase.co
-   VITE_SUPABASE_ANON_KEY=TU_ANON_KEY
-   # Opcional para túneles (ngrok, etc.)
-   VITE_PUBLIC_ALLOWED_HOSTS=f31f6fed942f.ngrok-free.app
-   VITE_PUBLIC_HMR_PROTOCOL=wss
-   VITE_PUBLIC_HMR_HOST=f31f6fed942f.ngrok-free.app
-   VITE_PUBLIC_HMR_PORT=443
-   ```
-2. Instalar y arrancar:
-```bash
-cd software-dashboard-main
-npm install
-npm run dev
-```
+Notas
+- Si sirves la app por HTTPS (ngrok), evita `localhost`/HTTP en `VITE_SUPABASE_URL` para no provocar “mixed content”.
 
-Notas importantes
-- No uses `localhost`/HTTP en `VITE_SUPABASE_URL` si sirves la app por HTTPS (ngrok) para evitar “mixed content”.
-- En `vite.config.ts` se soporta HMR remoto y `allowedHosts` a través de variables anteriores.
+2) Backend
+- Opción cloud: crea el proyecto en Supabase, aplica migraciones (Dashboard > SQL) y despliega Edge Functions si procede
+- Opción local (desarrollo): usa Supabase CLI (`supabase start`), aplica migraciones y apunta el frontend a la URL local (expuesta por ngrok si se accederá desde otras máquinas)
 
-### 2) Backend (opciones)
+3) Crear/validar el administrador
+- En `software-dashboard-main-backend/test-admin-creation.mjs` hay un script de verificación/creación de admin. Ejecuta con las variables de entorno `SUPABASE_URL` y `SUPABASE_ANON_KEY` definidas.
+- Si se usó el script de ejemplo, las credenciales suelen ser:
+  - Email: `admin@empresa.com`
+  - Contraseña: `admin123`
+  (Asegúrate de crearlas en el mismo entorno —cloud o local— al que apunta el frontend.)
 
-- Opción A: Supabase Cloud (recomendado)
-  - Crear proyecto, cargar migraciones (Dashboard > SQL) y desplegar Edge Functions si aplica
-  - Configurar Auth > URLs permitidas (agregar dominio de ngrok si usa OAuth/magic links)
-- Opción B: Supabase local
-  - Instalar Supabase CLI y ejecutar `supabase start`
-  - Aplicar migraciones del repo
-  - Apuntar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` al entorno local (exponer por ngrok si accedes desde otra PC)
+## Decisiones de rendimiento (resumen)
 
-### 3) Pruebas de admin (opcional)
+- Carga de generadores de reportes bajo demanda (reduce el bundle inicial)
+- Cache de métricas de dashboard (~30s) para evitar RPC repetitivas
+- Tiendas paginadas con actualización de métricas con throttle (configurable)
+- Selectores derivados memoizados (filtros/paginación sin recálculo innecesario)
+- Virtualización de tablas a partir de 50 ítems y reducción de animaciones por fila
+- Animaciones pausadas cuando la pestaña no está visible
 
-Hay un script de prueba en `software-dashboard-main-backend/test-admin-creation.mjs` para validar/crear un admin inicial (ajusta credenciales antes de ejecutarlo).
+## Navegación (actual)
 
-## 🧪 Scripts (frontend)
+- Acceso a Dashboard, Incidencias, Requerimientos, Reportes y Usuarios está habilitado para el administrador. La barra lateral muestra únicamente lo disponible para el usuario autenticado (actualmente, admin).
 
-- `npm run dev`: desarrollo
-- `npm run build`: producción
-- `npm run preview`: preview local de build
+## Solución de problemas
 
-## 🔐 Credenciales de prueba (si existen en tu entorno)
-- admin: `admin@empresa.com` / `admin123`
-- technician: `tecnico@empresa.com` / `tecnico123`
-- requester: `solicitante@empresa.com` / `solicitante123`
+- No inicia sesión al usar ngrok: suele indicar `VITE_SUPABASE_URL` apuntando a `localhost`/HTTP. Usa la URL HTTPS de Supabase cloud o expón Supabase local también por HTTPS.
+- “Mixed Content” en consola: frontend por HTTPS pero backend por HTTP. Cambia `VITE_SUPABASE_URL` a HTTPS.
+- HMR/CORS en túneles: usa `VITE_PUBLIC_ALLOWED_HOSTS` y variables de HMR remoto como se muestra arriba.
+- Exceso de recargas en tiempo real: incrementa los intervalos de refresh desde configuración si fuera necesario.
 
-Asegúrate de crearlas en el mismo entorno (cloud/local) al que apunta el frontend.
+## Seguridad
 
-## 🧠 Rendimiento y decisiones clave
+- No expongas la Service Role Key en el frontend
+- Edge Functions se invocan con el token del usuario actual (Bearer) y se validan en backend
+- Asegura `site_url` y orígenes permitidos en la configuración de Supabase
 
-- Virtualización de tablas a partir de 50 ítems; filas sin animación por-fila para reducir CPU
-- Generadores de reportes importados dinámicamente (PDF/Excel/CSV)
-- Cache de métricas del dashboard 30s; cache y single-flight en `fetchWithCache`
-- Selectores memoizados; menos cálculos por render
-- Throttle en actualización de métricas de stores (configurable)
-- Partículas pausadas si `document.hidden`; animaciones con duraciones contenidas
-- Mensajes de error de login contextualizados (credenciales, email no confirmado, red/HTTPS)
+## Roadmap
 
-## 🧭 Navegación (roles)
-
-- Dashboard, Incidencias, Requerimientos: admin, technician, requester
-- Reportes, Usuarios, Configuración: admin
-
-La `Sidebar` filtra opciones según el rol del usuario autenticado.
-
-## 🐛 Guía de resolución de problemas
-
-- No inicia sesión por ngrok: suele ser por `VITE_SUPABASE_URL` apuntando a `localhost` o HTTP. Usa la URL HTTPS de Supabase Cloud o expón Supabase local por ngrok HTTPS.
-- “Mixed Content” en consola: frontend por HTTPS con backend HTTP. Cambia a HTTPS.
-- CORS/HMR remoto: define `VITE_PUBLIC_ALLOWED_HOSTS` (y HMR host/protocol/port) como en el ejemplo.
-- Realtime recarga demasiado: usa `settings` para ajustar auto-refresh y considera aumentar intervalos.
-
-## 🔒 Seguridad
-
-- Nunca expongas Service Role Key en frontend
-- Edge Functions invocadas con `Authorization: Bearer <access_token>` del usuario actual
-- RLS y vistas limitan acceso por rol/permisos
-
-## 🗺️ Roadmap técnico
-
-- Safelist de clases dinámicas de Tailwind (colores por tema) para build de producción
-- Debounce/backoff en refresh central y realtime por tabla
-- Toggle “Modo rendimiento” (menos animaciones) en `settings`
+- Soporte real multi‑rol en UI (técnico/solicitante)
+- Modo rendimiento configurable (menos animaciones)
+- Safelist de clases Tailwind dinámicas para builds de producción
 - Tests unitarios/e2e para stores, repos y reportes
 
-## 📄 Licencia
+## Licencia
 
 MIT 
