@@ -28,7 +28,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 class SupabaseClientManager {
   private static instance: SupabaseClientManager;
   private supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
-  private supabaseAdminClient: ReturnType<typeof createClient<Database>> | null = null;
+  // Nota: no se expone admin client en cliente
 
   private constructor() {
     logger.debug('🔧 SupabaseClientManager: Instancia creada');
@@ -44,6 +44,14 @@ class SupabaseClientManager {
   getSupabaseClient(): ReturnType<typeof createClient<Database>> {
     if (!this.supabaseClient) {
 logger.debug('🔧 SupabaseClientManager: Creando cliente Supabase');
+      // Guard de entorno: en producción/https bloquear localhost/http para evitar contenido mixto y fallos remotos
+      if (!import.meta.env.DEV) {
+        const isHttp = supabaseUrl.startsWith('http://');
+        const isLocalhost = /localhost|127\.0\.0\.1/.test(supabaseUrl);
+        if (isHttp || isLocalhost) {
+          throw new Error('❌ Configuración insegura de Supabase en producción (URL local o HTTP)');
+        }
+      }
       this.supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
         auth: {
           autoRefreshToken: true,
@@ -61,10 +69,7 @@ logger.debug('🔧 SupabaseClientManager: Creando cliente Supabase');
     return this.supabaseClient;
   }
 
-  getSupabaseAdminClient(): ReturnType<typeof createClient<Database>> | null {
-    // Nota: SERVICE ROLE KEY nunca debe usarse en el cliente
-    return null;
-  }
+  getSupabaseAdminClient(): null { return null }
 }
 
 // =============================================================================
@@ -106,9 +111,9 @@ class ConnectionManager {
     return this.connectionPromise
   }
 
-  private async performConnectionCheck(): Promise<boolean> {
+   private async performConnectionCheck(): Promise<boolean> {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('departments')
         .select('count')
         .limit(1)
@@ -150,32 +155,32 @@ export const connectionManager = ConnectionManager.getInstance()
 class RealtimeManager {
   private channels: Map<string, any> = new Map()
 
-  subscribeToTable(table: string, callback: (payload: any) => void) {
-    if (this.channels.has(table)) {
+  subscribeToTable(tableName: string, callback: (payload: any) => void) {
+    if (this.channels.has(tableName)) {
       return
     }
 
     const channel = supabase
-      .channel(table)
+      .channel(tableName)
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table },
+        { event: '*', schema: 'public', table: tableName },
         callback
       )
       .subscribe()
 
-    this.channels.set(table, channel)
+    this.channels.set(tableName, channel)
   }
 
-  unsubscribeFromTable(table: string) {
-    const channel = this.channels.get(table)
+  unsubscribeFromTable(tableName: string) {
+    const channel = this.channels.get(tableName)
     if (channel) {
       supabase.removeChannel(channel)
-      this.channels.delete(table)
+      this.channels.delete(tableName)
     }
   }
 
   unsubscribeAll() {
-    this.channels.forEach((channel, table) => {
+    this.channels.forEach((channel) => {
       supabase.removeChannel(channel)
     })
     this.channels.clear()

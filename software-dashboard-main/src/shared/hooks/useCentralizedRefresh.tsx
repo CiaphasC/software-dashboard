@@ -189,7 +189,10 @@ export const useCentralizedRefresh = (stores: {
   // REFRESH EXECUTOR - Ejecutor principal de refresh
   // =============================================================================
 
+  const isInflightRef = useRef(false);
   const executeRefresh = useCallback(() => {
+    if (isInflightRef.current) return;
+    isInflightRef.current = true;
     // Verificar estado de formularios con cache
     const formState = checkFormState();
     
@@ -213,17 +216,27 @@ export const useCentralizedRefresh = (stores: {
     const now = Date.now();
 
     // Ejecutar callbacks que estén listos
+    const toRun: Array<{ id: string; cb: () => void; interval: number }> = [];
     refreshCallbacksRef.current.forEach((refreshCallback, id) => {
       if (now >= refreshCallback.nextExecution) {
-        try {
-          refreshCallback.callback();
-          refreshCallback.lastExecuted = now;
-          refreshCallback.nextExecution = now + (refreshCallback.config.interval || settings.config.dashboard.refreshInterval);
-        } catch (error) {
-          logger.error(`Error ejecutando refresh ${id}: ${(error as Error)?.message}`)
-        }
+        toRun.push({ id, cb: refreshCallback.callback, interval: refreshCallback.config.interval || settings.config.dashboard.refreshInterval });
       }
     });
+
+    // Ejecutar en lote con try/catch por callback
+    for (const item of toRun) {
+      try {
+        item.cb();
+        const cb = refreshCallbacksRef.current.get(item.id);
+        if (cb) {
+          cb.lastExecuted = now;
+          cb.nextExecution = now + item.interval;
+        }
+      } catch (error) {
+        logger.error(`Error ejecutando refresh ${item.id}: ${(error as Error)?.message}`)
+      }
+    }
+    isInflightRef.current = false;
   }, [checkFormState, settings.config.dashboard.refreshInterval]);
 
   // =============================================================================
