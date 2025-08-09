@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { LoadingSpinner } from '@/shared/components/ui/LoadingSpinner';
+import { LoadingSpinner, LoadingScreen } from '@/shared/components/ui/LoadingSpinner';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { Layout } from '@/shared/components/layout/Layout';
 

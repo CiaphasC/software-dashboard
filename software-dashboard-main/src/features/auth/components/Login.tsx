@@ -37,44 +37,31 @@ const Login: React.FC<LoginProps> = ({ onShowRegister }) => {
     resolver: zodResolver(loginSchema),
   });
 
-  // Animaciones GSAP para el formulario
+  // Animaciones GSAP para el formulario (con salvaguardas)
   useEffect(() => {
     let ctx: any;
+    let mounted = true;
     (async () => {
-      const { gsap } = await import('gsap');
-      gsapRef.current = gsap;
-      ctx = gsap.context(() => {
-        // Animación del formulario muy sutil
-        if (formRef.current) {
-          const formElements = gsap.utils.toArray(formRef.current.children);
-          
-          gsap.set(formElements, { 
-            opacity: 0, 
-            y: 20, // Reducido de 50 a 20
-            rotationX: -5, // Reducido de -15 a -5
-            transformPerspective: 600
-          });
-
-          gsap.to(formElements, {
-            opacity: 1,
-            y: 0,
-            rotationX: 0,
-            duration: 0.4, // Reducido de 0.8 a 0.4
-            stagger: 0.1, // Reducido de 0.15 a 0.1
-            ease: "power2.out"
-          });
-        }
-      }, formRef);
+      try {
+        const { gsap } = await import('gsap');
+        if (!mounted) return;
+        gsapRef.current = gsap;
+        if (!formRef.current) return;
+        ctx = gsap.context(() => {
+          const formElements = gsap.utils.toArray(formRef.current!.children);
+          gsap.set(formElements, { opacity: 0, y: 20, rotationX: -5, transformPerspective: 600 });
+          gsap.to(formElements, { opacity: 1, y: 0, rotationX: 0, duration: 0.4, stagger: 0.1, ease: 'power2.out' });
+        }, formRef);
+      } catch {}
     })();
-
-    return () => ctx && ctx.revert();
+    return () => { mounted = false; if (ctx) ctx.revert?.(); };
   }, []);
 
   const onSubmit = useCallback(async (data: LoginFormData) => {
     setIsLoading(true);
     
     // Animación de carga muy sutil
-    gsapRef.current?.to(formRef.current, {
+    if (formRef.current && gsapRef.current) gsapRef.current.to(formRef.current, {
       scale: 0.98, // Reducido de 0.95 a 0.98
       duration: 0.1, // Reducido de 0.2 a 0.1
       ease: "power2.out"
@@ -84,12 +71,12 @@ const Login: React.FC<LoginProps> = ({ onShowRegister }) => {
       await login(data.email, data.password);
       
       // Animación de éxito muy sutil
-      gsapRef.current?.to(formRef.current, {
+      if (formRef.current && gsapRef.current) gsapRef.current.to(formRef.current, {
         scale: 1.02, // Reducido de 1.05 a 1.02
         duration: 0.2, // Reducido de 0.3 a 0.2
         ease: "power2.out",
         onComplete: () => {
-          gsapRef.current?.to(formRef.current, {
+          if (formRef.current && gsapRef.current) gsapRef.current.to(formRef.current, {
             scale: 1,
             duration: 0.1, // Reducido de 0.2 a 0.1
             ease: "power2.out"
@@ -101,7 +88,7 @@ const Login: React.FC<LoginProps> = ({ onShowRegister }) => {
       navigate('/dashboard');
     } catch (error) {
       // Animación de error muy sutil
-      gsapRef.current?.to(formRef.current, {
+      if (formRef.current && gsapRef.current) gsapRef.current.to(formRef.current, {
         rotationY: [-2, 2, -2, 2, 0] as any, // Reducido de [-10, 10, -10, 10, 0] a [-2, 2, -2, 2, 0]
         rotationX: [-1, 1, -1, 1, 0] as any, // Reducido de [-5, 5, -5, 5, 0] a [-1, 1, -1, 1, 0]
         duration: 0.3, // Reducido de 0.6 a 0.3
