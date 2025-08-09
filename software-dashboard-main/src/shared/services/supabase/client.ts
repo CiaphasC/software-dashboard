@@ -10,14 +10,15 @@ import type { Database } from './types'
 // ENVIRONMENT VARIABLES - Variables de entorno
 // =============================================================================
 
-// Configuración temporal para desarrollo local
+// Configuración de entorno: no exponer claves por defecto en cliente
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('❌ Variables de entorno de Supabase no configuradas')
+  throw new Error('❌ Variables de entorno de Supabase no configuradas (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)')
 }
+
+// Nota: SERVICE ROLE KEY nunca debe usarse en el cliente
 
 // =============================================================================
 // SUPABASE CLIENT MANAGER - Gestor de clientes de Supabase
@@ -60,19 +61,8 @@ class SupabaseClientManager {
   }
 
   getSupabaseAdminClient(): ReturnType<typeof createClient<Database>> | null {
-    if (!supabaseServiceKey) return null;
-    
-    if (!this.supabaseAdminClient) {
-      console.log('🔧 SupabaseClientManager: Creando cliente Admin Supabase');
-      this.supabaseAdminClient = createClient<Database>(supabaseUrl, supabaseServiceKey, {
-        auth: {
-          autoRefreshToken: true,
-          persistSession: false,
-          detectSessionInUrl: false
-        }
-      });
-    }
-    return this.supabaseAdminClient;
+    // Nota: SERVICE ROLE KEY nunca debe usarse en el cliente
+    return null;
   }
 }
 

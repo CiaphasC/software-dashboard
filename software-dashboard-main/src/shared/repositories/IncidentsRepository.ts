@@ -3,8 +3,33 @@
 // =============================================================================
 
 import { edgeFunctionsService, dataService } from '@/shared/services/supabase'
-import type { IncidentWithTimes } from '@/shared/services/supabase/types'
+import type { IncidentWithTimes as IncidentWithTimesBase } from '@/shared/services/supabase/types'
 import type { IncidentDomain, IncidentListResult, IncidentMetricsDomain } from '@/shared/domain/incident'
+
+type IncidentWithTimesExtended = IncidentWithTimesBase & {
+  estimated_resolution_date?: string | null
+  affected_area_name?: string | null
+  creator_name?: string | null
+  assignee_name?: string | null
+  time_remaining?: string | null
+}
+
+function mapToDomain(i: IncidentWithTimesExtended): IncidentDomain {
+  return {
+    id: i.id,
+    title: i.title,
+    description: i.description ?? '',
+    status: i.status,
+    priority: i.priority,
+    type: i.type,
+    createdAt: i.created_at,
+    estimatedResolutionDate: i.estimated_resolution_date ?? null,
+    affectedAreaName: i.affected_area_name ?? null,
+    creatorName: i.creator_name ?? null,
+    assigneeName: i.assignee_name ?? null,
+    timeRemaining: i.time_remaining ?? null,
+  }
+}
 
 export interface IncidentQuery {
   page?: number
@@ -19,23 +44,6 @@ export interface IncidentQuery {
     department?: string
     dateFrom?: string
     dateTo?: string
-  }
-}
-
-function mapToDomain(i: IncidentWithTimes): IncidentDomain {
-  return {
-    id: i.id,
-    title: i.title,
-    description: i.description ?? '',
-    status: i.status,
-    priority: i.priority,
-    type: i.type,
-    createdAt: i.created_at,
-    estimatedResolutionDate: (i as any).estimated_resolution_date ?? null,
-    affectedAreaName: (i as any).affected_area_name ?? null,
-    creatorName: (i as any).creator_name ?? null,
-    assigneeName: (i as any).assignee_name ?? null,
-    timeRemaining: (i as any).time_remaining ?? null,
   }
 }
 

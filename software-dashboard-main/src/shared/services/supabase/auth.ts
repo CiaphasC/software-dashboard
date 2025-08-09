@@ -289,42 +289,29 @@ export class AuthService {
    */
   async createUser(userData: CreateUserData): Promise<Profile> {
     try {
-      // Obtener token de sesión
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No hay sesión activa');
-      }
+      if (!session) throw new Error('No hay sesión activa');
 
-      // Llamar a la Edge Function para crear usuario
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user-ts`, {
+      const { httpClient } = await import('@/shared/services/http/httpClient');
+      const client = new httpClient.HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
+      const result = await client.request<{ success: boolean; user: { id: string } }>('create-user-ts', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
+        body: {
           name: userData.name,
           email: userData.email,
           password: userData.password,
           role: userData.role,
           department: userData.department,
           isActive: userData.isActive ?? true
-        })
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY
+        }
       });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Error creando usuario');
-      }
-
-      // Obtener el perfil creado
+      if (!result.success) throw new Error('Error creando usuario');
       const profile = await this.getProfile(result.user.id);
-      if (!profile) {
-        throw new Error('Error obteniendo perfil del usuario creado');
-      }
-
+      if (!profile) throw new Error('Error obteniendo perfil del usuario creado');
       return profile;
     } catch (error) {
       console.error('❌ Error creando usuario:', error);
@@ -337,32 +324,20 @@ export class AuthService {
    */
   async updateUser(userId: string, updates: UpdateUserData): Promise<Profile> {
     try {
-      // Obtener token de sesión
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No hay sesión activa');
-      }
+      if (!session) throw new Error('No hay sesión activa');
 
-      // Llamar a la Edge Function para actualizar usuario
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-user-ts`, {
+      const { httpClient } = await import('@/shared/services/http/httpClient');
+      const client = new httpClient.HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
+      const result = await client.request<{ success: boolean; user: Profile }>('update-user-ts', {
         method: 'POST',
+        body: { userId, updates },
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          userId,
-          updates
-        })
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY
+        }
       });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Error actualizando usuario');
-      }
-
+      if (!result.success) throw new Error('Error actualizando usuario');
       return result.user;
     } catch (error) {
       console.error('❌ Error actualizando usuario:', error);
@@ -375,30 +350,20 @@ export class AuthService {
    */
   async deleteUser(userId: string): Promise<void> {
     try {
-      // Obtener token de sesión
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No hay sesión activa');
-      }
+      if (!session) throw new Error('No hay sesión activa');
 
-      // Llamar a la Edge Function para eliminar usuario
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user-ts`, {
+      const { httpClient } = await import('@/shared/services/http/httpClient');
+      const client = new httpClient.HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
+      const result = await client.request<{ success: boolean }>('delete-user-ts', {
         method: 'POST',
+        body: { userId },
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          userId
-        })
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY
+        }
       });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Error eliminando usuario');
-      }
+      if (!result.success) throw new Error('Error eliminando usuario');
     } catch (error) {
       console.error('❌ Error eliminando usuario:', error);
       throw error;

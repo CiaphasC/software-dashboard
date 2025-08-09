@@ -1,15 +1,14 @@
 import { edgeFunctionsService } from '@/shared/services/supabase'
-import type { RequirementWithUsers } from '@/shared/services/supabase/types'
+import type { RequirementWithUsers as RequirementWithUsersBase } from '@/shared/services/supabase/types'
 import type { RequirementDomain, RequirementListResult, RequirementMetricsDomain } from '@/shared/domain/requirement'
 
-export interface RequirementQuery {
-  page?: number
-  limit?: number
-  search?: string
-  filters?: Record<string, any>
+type RequirementWithUsersExtended = RequirementWithUsersBase & {
+  estimated_delivery_date?: string | null
+  requesting_area_name?: string | null
+  creator_name?: string | null
 }
 
-function mapToDomain(r: RequirementWithUsers): RequirementDomain {
+function mapToDomain(r: RequirementWithUsersExtended): RequirementDomain {
   return {
     id: r.id,
     title: r.title,
@@ -18,10 +17,17 @@ function mapToDomain(r: RequirementWithUsers): RequirementDomain {
     priority: r.priority,
     type: r.type,
     createdAt: r.created_at,
-    estimatedDeliveryDate: (r as any).estimated_delivery_date ?? null,
-    requestingAreaName: (r as any).requesting_area_name ?? null,
-    creatorName: (r as any).creator_name ?? null,
+    estimatedDeliveryDate: r.estimated_delivery_date ?? null,
+    requestingAreaName: r.requesting_area_name ?? null,
+    creatorName: r.creator_name ?? null,
   }
+}
+
+export interface RequirementQuery {
+  page?: number
+  limit?: number
+  search?: string
+  filters?: Record<string, any>
 }
 
 export class RequirementsRepository {

@@ -48,6 +48,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     user && item.roles.includes(user.role)
   );
 
+  // Prefetch de bundles por ruta en hover
+  const prefetchBundle = (path: string) => {
+    switch (path) {
+      case '/dashboard':
+        import('@/features/dashboard/pages/Dashboard');
+        break;
+      case '/incidents':
+        import('@/features/incidents/pages/IncidentsPage');
+        break;
+      case '/requirements':
+        import('@/features/requirements/pages/RequirementsPage');
+        break;
+      case '/activities':
+        import('@/features/activities/pages/ActivitiesPage');
+        break;
+      case '/reportes':
+        import('@/features/reports/pages/ReportsPage');
+        break;
+      case '/usuarios':
+        import('@/features/users/pages/UsersPage');
+        break;
+      case '/configuracion':
+        import('@/features/settings/pages/SettingsPage');
+        break;
+    }
+  }
+
   const containerVariants = {
     hidden: { opacity: 0, x: -20 },
     visible: {
@@ -142,9 +169,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
               <Link
                 to={item.href}
                 onClick={onClose} // Close sidebar on mobile when clicking a link
-                onPointerEnter={prefetchHandlers?.onPointerEnter}
+                onPointerEnter={(e) => { prefetchBundle(item.href); prefetchHandlers?.onPointerEnter?.(e as any); }}
                 onPointerLeave={prefetchHandlers?.onPointerLeave}
-                onFocus={prefetchHandlers?.onFocus}
+                onFocus={(e) => { prefetchBundle(item.href); prefetchHandlers?.onFocus?.(e as any); }}
                 onBlur={prefetchHandlers?.onBlur}
                 className={cn(
                   'group flex items-center px-3 py-3 text-sm font-medium rounded-2xl transition-all duration-300 relative overflow-hidden',

@@ -59,15 +59,11 @@ export const StoreProvider: React.FC<StoreProviderProps> = ({ children }) => {
   useEffect(() => {
     // Cargar datos iniciales si el usuario está autenticado
     if (auth.isAuthenticated && auth.user) {
-      // Cargar usuarios para todos los roles (necesario para estadísticas)
-      users.loadUsers();
-      
-      // Cargar datos específicos según el rol
+      // Cargar datos específicos según el rol (ligero)
       if (auth.user.role === 'admin') {
         auth.updatePendingUsersCount();
       }
-      incidents.loadIncidents();
-      requirements.loadRequirements();
+      // Nota: la carga de usuarios/incidencias/requerimientos ocurre on-demand por ruta.
     }
   }, [auth.isAuthenticated, auth.user]);
 
