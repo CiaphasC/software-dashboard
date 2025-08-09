@@ -3,11 +3,11 @@
 // Arquitectura de Software Profesional - Gestión de Estado de Incidencias
 // =============================================================================
 
-import { create } from 'zustand';
 import { FilterValues } from '@/shared/types/common.types';
 import { dataService } from '@/shared/services/supabase';
 import { incidentsRepository, type IncidentQuery } from '@/shared/repositories/IncidentsRepository';
 import type { IncidentDomain, IncidentMetricsDomain } from '@/shared/domain/incident';
+import { createPaginatedEntityStore } from '@/shared/store/factories/createPaginatedEntityStore'
 
 // =============================================================================
 // INCIDENTS STATE - Estado de incidencias
@@ -69,7 +69,34 @@ export interface IncidentsActions {
 // INCIDENTS STORE - Store completo de incidencias
 // =============================================================================
 
-export const useIncidentsStore = create<IncidentsState & IncidentsActions>()((set, get) => ({
+export const useIncidentsStore = createPaginatedEntityStore<IncidentDomain, IncidentQuery, IncidentMetricsDomain, FilterValues>({
+  initialStats: { totalIncidents: 0, openIncidents: 0, inProgressIncidents: 0, resolvedIncidents: 0, closedIncidents: 0 },
+  initialFilters: {},
+  buildQuery: (state) => ({
+    page: state.currentPage,
+    limit: state.itemsPerPage,
+    search: state.searchQuery,
+    filters: {
+      status: state.filters.status as string | undefined,
+      priority: state.filters.priority as string | undefined,
+      type: state.filters.type as string | undefined,
+      assignedTo: state.filters.assignedTo as string | undefined,
+      createdBy: state.filters.createdBy as string | undefined,
+      department: state.filters.department as string | undefined,
+      dateFrom: state.filters.dateFrom as string | undefined,
+      dateTo: state.filters.dateTo as string | undefined,
+    }
+  }),
+  list: (q) => incidentsRepository.list(q),
+  metrics: () => incidentsRepository.metrics(),
+  computeMetricsFallback: (items) => ({
+    totalIncidents: items.length,
+    openIncidents: items.filter(i => i.status === 'open').length,
+    inProgressIncidents: items.filter(i => i.status === 'in_progress').length,
+    resolvedIncidents: items.filter(i => i.status === 'resolved').length,
+    closedIncidents: items.filter(i => i.status === 'closed').length,
+  }),
+}, (useBase) => ({
   // =============================================================================
   // INITIAL STATE - Estado inicial
   // =============================================================================
