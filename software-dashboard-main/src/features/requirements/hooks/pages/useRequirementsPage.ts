@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { log } from '@/shared/utils/logger';
 import { useRequirementModal } from '@/features/requirements/hooks';
 import { useRequirementsStore } from '@/shared/store/requirementsStore';
+import { selectRequirements, selectRequirementsLoading } from '@/shared/store/selectors'
+import { shallow } from 'zustand/shallow'
 import { Requirement, RequirementType, RequirementStatus, Priority } from '@/shared/types/common.types';
 
 // Tipo para las opciones de filtro
@@ -28,15 +30,15 @@ export const useRequirementsPage = () => {
   const { isOpen: showForm, open: openForm, close: closeForm } = useRequirementModal();
 
   // Store de requerimientos (reemplaza el hook duplicado)
-  const { 
-    requirements, 
-    loading, 
-    error, 
-    createRequirement,
-    updateRequirement,
-    deleteRequirement,
-    loadRequirements
-  } = useRequirementsStore();
+  const requirements = useRequirementsStore(selectRequirements)
+  const loading = useRequirementsStore(selectRequirementsLoading)
+  const { error, createRequirement, updateRequirement, deleteRequirement, loadRequirements } = useRequirementsStore(s => ({
+    error: s.error,
+    createRequirement: s.createRequirement,
+    updateRequirement: s.updateRequirement,
+    deleteRequirement: s.deleteRequirement,
+    loadRequirements: s.loadRequirements,
+  }), shallow)
 
   // Cargar requerimientos cuando cambien los filtros
   useEffect(() => {
