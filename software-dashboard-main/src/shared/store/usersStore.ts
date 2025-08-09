@@ -3,12 +3,12 @@
 // Arquitectura de Software Profesional - Gestión de Estado de Usuarios
 // =============================================================================
 
-import { create } from 'zustand';
 import { logger } from '@/shared/utils/logger';
 import { authService } from '@/shared/services/supabase';
 import type { CreateUserData, UpdateUserData } from '@/shared/services/supabase';
 import { usersRepository } from '@/shared/repositories/UsersRepository';
 import type { UserDomain, UserMetricsDomain } from '@/shared/domain/user';
+import { createPaginatedEntityStore } from '@/shared/store/factories/createPaginatedEntityStore'
 
 // =============================================================================
 // USERS STATE - Estado de usuarios
@@ -78,7 +78,22 @@ export interface UsersActions {
 // USERS STORE - Store completo de usuarios
 // =============================================================================
 
-export const useUsersStore = create<UsersState & UsersActions>()((set, get) => ({
+export const useUsersStore = createPaginatedEntityStore<UserDomain, { page?: number; limit?: number; search?: string; role?: string }, UserMetricsDomain, Record<string, string>>({
+  initialStats: { totalUsers: 0, activeUsers: 0, inactiveUsers: 0, admins: 0, technicians: 0, requesters: 0 },
+  initialFilters: {},
+  buildQuery: (state) => ({ page: state.currentPage, limit: state.itemsPerPage, search: state.searchQuery, role: state.filters.role }),
+  list: (q) => usersRepository.list(q),
+  metrics: () => usersRepository.metrics(),
+  computeMetricsFallback: (items) => {
+    const totalUsers = items.length
+    const activeUsers = items.filter(u => u.isActive).length
+    const inactiveUsers = totalUsers - activeUsers
+    const admins = items.filter(u => u.role === 'admin').length
+    const technicians = items.filter(u => u.role === 'technician').length
+    const requesters = items.filter(u => u.role === 'requester').length
+    return { totalUsers, activeUsers, inactiveUsers, admins, technicians, requesters }
+  },
+}, (useBase) => ({
   // =============================================================================
   // INITIAL STATE - Estado inicial
   // =============================================================================
@@ -131,37 +146,9 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
   // DATA LOADING ACTIONS - Acciones de carga de datos
   // =============================================================================
 
-  loadUsers: async () => {
-    set({ loading: true, error: null });
-    
-    try {
-      const { currentPage, usersPerPage, filters, searchQuery } = get();
-      const result = await usersRepository.list({ page: currentPage, limit: usersPerPage, search: searchQuery, role: filters.role });
-      const totalPages = Math.ceil(result.total / usersPerPage);
-      set((state) => ({
-        users: currentPage === 1 ? result.items : [...state.users, ...result.items],
-        totalUsers: result.total,
-        totalPages,
-        hasMore: result.hasMore,
-        loading: false,
-        error: null
-      }));
-      get().updateStats();
-    } catch (error) {
-      set({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Error al cargar usuarios'
-      });
-      logger.error('Error al cargar usuarios', (error as Error).message)
-    }
-  },
+  loadUsers: () => useBase.getState().load(),
 
-  loadMoreUsers: async () => {
-    const { hasMore, currentPage } = get();
-    if (!hasMore) return;
-    set({ currentPage: currentPage + 1 });
-    await get().loadUsers();
-  },
+  loadMoreUsers: () => useBase.getState().loadMore(),
 
   // =============================================================================
   // CRUD ACTIONS - Acciones CRUD
@@ -253,53 +240,27 @@ export const useUsersStore = create<UsersState & UsersActions>()((set, get) => (
   // FILTERS AND SEARCH ACTIONS - Acciones de filtros y búsqueda
   // =============================================================================
 
-  setFilters: (filters: Record<string, string>) => {
-    set({ filters, currentPage: 1, hasMore: true });
-    get().loadUsers(); // Recargar con nuevos filtros
-  },
+  setFilters: (filters: Record<string, string>) => useBase.getState().setFilters(filters),
 
-  setSearchQuery: (query: string) => {
-    set({ searchQuery: query, currentPage: 1, hasMore: true });
-    get().loadUsers(); // Recargar con nueva búsqueda
-  },
+  setSearchQuery: (query: string) => useBase.getState().setSearch(query),
 
-  clearFilters: () => {
-    set({ 
-      filters: {}, 
-      searchQuery: '', 
-      currentPage: 1,
-      hasMore: true
-    });
-    get().loadUsers(); // Recargar sin filtros
-  },
+  clearFilters: () => useBase.getState().clearFilters(),
 
   // =============================================================================
   // PAGINATION ACTIONS - Acciones de paginación
   // =============================================================================
 
-  setCurrentPage: (page: number) => {
-    set({ currentPage: page });
-    get().loadUsers(); // Recargar con nueva página
-  },
+  setCurrentPage: (page: number) => useBase.getState().setPage(page),
 
-  setUsersPerPage: (perPage: number) => {
-    set({ usersPerPage: perPage, currentPage: 1 }); // Reset a primera página
-    get().loadUsers(); // Recargar con nuevo tamaño de página
-  },
+  setUsersPerPage: (perPage: number) => useBase.getState().setPageSize(perPage),
 
   // =============================================================================
   // STATE MANAGEMENT ACTIONS - Acciones de gestión de estado
   // =============================================================================
 
-  setLoading: (loading: boolean) => {
-    set({ loading });
-  },
+  setLoading: (loading: boolean) => useBase.getState().setLoading(loading),
 
-  setError: (error: string | null) => {
-    set({ error });
-  },
+  setError: (error: string | null) => useBase.getState().setError(error),
 
-  clearError: () => {
-    set({ error: null });
-  }
-})); 
+  clearError: () => useBase.getState().clearError(),
+}));

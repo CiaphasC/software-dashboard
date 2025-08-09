@@ -1,3 +1,19 @@
+import type { IncidentsState } from '@/shared/store/incidentsStore'
+import type { RequirementsState } from '@/shared/store/requirementsStore'
+import type { UsersState } from '@/shared/store/usersStore'
+
+export const selectIncidents = (s: IncidentsState) => s.incidents
+export const selectIncidentsLoading = (s: IncidentsState) => s.loading
+export const selectIncidentsHasMore = (s: IncidentsState) => s.hasMore
+
+export const selectRequirements = (s: RequirementsState) => s.requirements
+export const selectRequirementsLoading = (s: RequirementsState) => s.loading
+export const selectRequirementsHasMore = (s: RequirementsState) => s.hasMore
+
+export const selectUsers = (s: UsersState) => s.users
+export const selectUsersLoading = (s: UsersState) => s.loading
+export const selectUsersHasMore = (s: UsersState) => s.hasMore
+
 // =============================================================================
 // STORE SELECTORS - Selectores optimizados para stores de Zustand
 // Arquitectura de Software Profesional - Optimización de Performance

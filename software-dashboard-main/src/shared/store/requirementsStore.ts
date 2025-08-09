@@ -3,12 +3,12 @@
 // Arquitectura de Software Profesional - Gestión de Estado de Requerimientos
 // =============================================================================
 
-import { create } from 'zustand';
 import { FilterValues } from '@/shared/types/common.types';
 import { dataService } from '@/shared/services/supabase';
 import { logger } from '@/shared/utils/logger'
 import { requirementsRepository, type RequirementQuery } from '@/shared/repositories/RequirementsRepository';
 import type { RequirementDomain, RequirementMetricsDomain } from '@/shared/domain/requirement';
+import { createPaginatedEntityStore } from '@/shared/store/factories/createPaginatedEntityStore'
 
 // =============================================================================
 // REQUIREMENTS STATE - Estado de requerimientos
@@ -70,7 +70,34 @@ export interface RequirementsActions {
 // REQUIREMENTS STORE - Store completo de requerimientos
 // =============================================================================
 
-export const useRequirementsStore = create<RequirementsState & RequirementsActions>()((set, get) => ({
+export const useRequirementsStore = createPaginatedEntityStore<RequirementDomain, RequirementQuery, RequirementMetricsDomain, FilterValues>({
+  initialStats: { totalRequirements: 0, pendingRequirements: 0, inProgressRequirements: 0, completedRequirements: 0, deliveredRequirements: 0 },
+  initialFilters: {},
+  buildQuery: (state) => ({
+    page: state.currentPage,
+    limit: state.itemsPerPage,
+    search: state.searchQuery,
+    filters: {
+      status: state.filters.status,
+      priority: state.filters.priority,
+      type: state.filters.type,
+      assignedTo: state.filters.assignedTo,
+      createdBy: state.filters.createdBy,
+      department: state.filters.department,
+      dateFrom: state.filters.dateFrom,
+      dateTo: state.filters.dateTo,
+    }
+  }),
+  list: (q) => requirementsRepository.list(q),
+  metrics: () => requirementsRepository.metrics(),
+  computeMetricsFallback: (items) => ({
+    totalRequirements: items.length,
+    pendingRequirements: items.filter(r => r.status === 'pending').length,
+    inProgressRequirements: items.filter(r => r.status === 'in_progress').length,
+    completedRequirements: items.filter(r => r.status === 'completed').length,
+    deliveredRequirements: items.filter(r => r.status === 'delivered').length,
+  }),
+}, (useBase) => ({
   // =============================================================================
   // INITIAL STATE - Estado inicial
   // =============================================================================
@@ -98,54 +125,7 @@ export const useRequirementsStore = create<RequirementsState & RequirementsActio
   // CRUD ACTIONS - Acciones CRUD
   // =============================================================================
 
-  loadRequirements: async (filters?: FilterValues) => {
-    set({ loading: true, error: null });
-    
-    try {
-      const currentFilters = filters || get().filters;
-      const searchQuery = get().searchQuery;
-      const currentPage = get().currentPage;
-      const itemsPerPage = get().itemsPerPage;
-
-      const query: RequirementQuery = {
-        page: currentPage,
-        limit: itemsPerPage,
-        search: searchQuery,
-        filters: {
-          status: currentFilters.status,
-          priority: currentFilters.priority,
-          type: currentFilters.type,
-          assignedTo: currentFilters.assignedTo,
-          createdBy: currentFilters.createdBy,
-          department: currentFilters.department,
-          dateFrom: currentFilters.dateFrom,
-          dateTo: currentFilters.dateTo,
-        }
-      }
-      const result = await requirementsRepository.list(query);
-
-      const totalPages = Math.ceil(result.total / itemsPerPage);
-
-      set((state) => ({
-        requirements: currentPage === 1 ? result.items : [...state.requirements, ...result.items],
-        totalItems: result.total,
-        totalPages,
-        hasMore: result.hasMore,
-        loadedPages: result.page,
-        loading: false,
-        error: null
-      }));
-
-      // Actualizar estadísticas
-      get().updateStats();
-    } catch (error) {
-      set({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Error al cargar requerimientos'
-      });
-      logger.error('Error al cargar requerimientos', (error as Error).message)
-    }
-  },
+  loadRequirements: (filters?: FilterValues) => useBase.getState().load(filters as any),
 
   createRequirement: async (requirementData) => {
     set({ loading: true, error: null });
@@ -195,87 +175,39 @@ export const useRequirementsStore = create<RequirementsState & RequirementsActio
     }
   },
 
-  loadMoreRequirements: async () => {
-    const { hasMore, currentPage } = get();
-    if (!hasMore) return;
-    set({ currentPage: currentPage + 1 });
-    await get().loadRequirements();
-  },
+  loadMoreRequirements: () => useBase.getState().loadMore(),
 
   // =============================================================================
   // FILTERS AND SEARCH ACTIONS - Acciones de filtros y búsqueda
   // =============================================================================
 
-  setFilters: (filters: FilterValues) => {
-    set({ filters, currentPage: 1, hasMore: true });
-    get().loadRequirements(filters);
-  },
+  setFilters: (filters: FilterValues) => useBase.getState().setFilters(filters as any),
 
-  setSearchQuery: (query: string) => {
-    set({ searchQuery: query, currentPage: 1, hasMore: true });
-    get().loadRequirements();
-  },
+  setSearchQuery: (query: string) => useBase.getState().setSearch(query),
 
-  clearFilters: () => {
-    set({ 
-      filters: {}, 
-      searchQuery: '', 
-      currentPage: 1,
-      hasMore: true
-    });
-    get().loadRequirements();
-  },
+  clearFilters: () => useBase.getState().clearFilters(),
 
   // =============================================================================
   // PAGINATION ACTIONS - Acciones de paginación
   // =============================================================================
 
-  setCurrentPage: (page: number) => {
-    set({ currentPage: page });
-    get().loadRequirements();
-  },
+  setCurrentPage: (page: number) => useBase.getState().setPage(page),
 
-  setItemsPerPage: (items: number) => {
-    set({ itemsPerPage: items, currentPage: 1 });
-    get().loadRequirements();
-  },
+  setItemsPerPage: (items: number) => useBase.getState().setPageSize(items),
 
   // =============================================================================
   // STATE MANAGEMENT ACTIONS - Acciones de gestión de estado
   // =============================================================================
 
-  setLoading: (loading: boolean) => {
-    set({ loading });
-  },
+  setLoading: (loading: boolean) => useBase.getState().setLoading(loading),
 
-  setError: (error: string | null) => {
-    set({ error });
-  },
+  setError: (error: string | null) => useBase.getState().setError(error),
 
-  clearError: () => {
-    set({ error: null });
-  },
+  clearError: () => useBase.getState().clearError(),
 
   // =============================================================================
   // STATISTICS ACTIONS - Acciones de estadísticas
   // =============================================================================
 
-  updateStats: () => {
-    import('@/shared/services/supabase').then(async ({ edgeFunctionsService }) => {
-      try {
-        const metrics = await edgeFunctionsService.getRequirementMetrics();
-        set({ stats: metrics as any });
-      } catch {
-        const requirements = get().requirements;
-        const stats: RequirementMetricsDomain = {
-          totalRequirements: requirements.length,
-          pendingRequirements: requirements.filter(r => r.status === 'pending').length,
-          inProgressRequirements: requirements.filter(r => r.status === 'in_progress').length,
-          completedRequirements: requirements.filter(r => r.status === 'completed').length,
-          deliveredRequirements: requirements.filter(r => r.status === 'delivered').length
-        };
-        set({ stats });
-      }
-    })
-  }
-})); 
+  updateStats: () => useBase.getState().updateStats(),
+}));
