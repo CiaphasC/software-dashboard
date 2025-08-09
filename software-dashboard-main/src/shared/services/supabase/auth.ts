@@ -293,7 +293,7 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
-      const { httpClient } = await import('@/shared/services/http/httpClient');
+      const { HttpClient } = await import('@/shared/services/http/httpClient');
       const client = new httpClient.HttpClient(import.meta.env.VITE_SUPABASE_URL + '/functions/v1');
       const result = await client.request<{ success: boolean; user: { id: string } }>('create-user-ts', {
         method: 'POST',
@@ -463,7 +463,7 @@ export class AuthService {
         deptShortName = dept?.short_name ?? null;
       }
 
-      const client = new httpClient.HttpClient((import.meta.env.VITE_SUPABASE_URL as string) + '/functions/v1');
+      const client = new HttpClient((import.meta.env.VITE_SUPABASE_URL as string) + '/functions/v1');
       const createRes = await client.request<{ success: boolean; user?: { id: string } }>('create-user-ts', {
         method: 'POST',
         body: {
