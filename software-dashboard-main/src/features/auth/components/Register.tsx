@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import AuthCard from '@/features/auth/components/ui/AuthCard';
 import PasswordInput from '@/features/auth/components/ui/PasswordInput';
 import { dataService } from '@/shared/services/supabase';
+import { logger } from '@/shared/utils/logger'
 
 // Schema de validación para el registro
 const registerSchema = z.object({
@@ -109,7 +110,7 @@ const Register: React.FC<RegisterProps> = ({ onBackToLogin }) => {
         }));
       setRoleOptions(roleOptions);
     } catch (error) {
-      console.error('Error cargando catálogos:', error);
+      logger.error('Register: Error cargando catálogos', error as Error);
       // Usar opciones por defecto si falla la carga
       setDepartmentOptions(defaultDepartmentOptions);
       setRoleOptions(defaultRoleOptions);

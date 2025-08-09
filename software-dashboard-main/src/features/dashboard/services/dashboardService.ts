@@ -17,7 +17,7 @@
 
 import { dataService } from '@/shared/services/supabase';
 import { DashboardMetrics } from '@/shared/types/common.types';
-import { log } from '@/shared/utils/logger';
+import { log, logger } from '@/shared/utils/logger';
 
 /**
  * Interfaz para las respuestas del servicio del dashboard
@@ -51,7 +51,7 @@ export class DashboardService {
         data
       };
     } catch (error) {
-      console.error('DashboardService: Error al obtener métricas:', error);
+      logger.error('DashboardService: Error al obtener métricas:', error as Error);
       return {
         success: false,
         error: 'Error al cargar las métricas del dashboard'
@@ -76,7 +76,7 @@ export class DashboardService {
         data
       };
     } catch (error) {
-      console.error('DashboardService: Error al refrescar métricas:', error);
+      logger.error('DashboardService: Error al refrescar métrricas:', error as Error);
       return {
         success: false,
         error: 'Error al refrescar las métricas del dashboard'
@@ -111,7 +111,7 @@ export class DashboardService {
         data
       };
     } catch (error) {
-      console.error('DashboardService: Error al obtener métricas filtradas:', error);
+      logger.error('DashboardService: Error al obtener métricas filtradas:', error as Error);
       return {
         success: false,
         error: 'Error al obtener métricas filtradas'
@@ -138,7 +138,7 @@ export class DashboardService {
         data
       };
     } catch (error) {
-      console.error('DashboardService: Error al obtener estadísticas en tiempo real:', error);
+      logger.error('DashboardService: Error al obtener estadísticas en tiempo real:', error as Error);
       return {
         success: false,
         error: 'Error al obtener estadísticas en tiempo real'
@@ -165,7 +165,7 @@ export class DashboardService {
         data
       };
     } catch (error) {
-      console.error('DashboardService: Error al exportar datos:', error);
+      logger.error('DashboardService: Error al exportar datos:', error as Error);
       return {
         success: false,
         error: `Error al exportar datos en formato ${format}`
@@ -190,7 +190,7 @@ export class DashboardService {
         lastUpdated: new Date().toISOString()
       };
     } catch (error) {
-      console.error('DashboardService: Error al validar frescura de datos:', error);
+      logger.error('DashboardService: Error al validar frescura de datos:', error as Error);
       return {
         isFresh: false
       };

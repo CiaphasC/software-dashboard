@@ -240,12 +240,6 @@ export const RequirementsTable: React.FC<RequirementsTableProps> = ({
       tableView: 'Tabla',
       cardsView: 'Tarjetas',
     },
-    virtualization: {
-      enabled: true,
-      threshold: 1500,
-      height: 520,
-      rowHeight: 72,
-    },
   };
 
   return (
@@ -253,6 +247,9 @@ export const RequirementsTable: React.FC<RequirementsTableProps> = ({
       items={requirements}
       loading={loading}
       config={config}
+      virtualizeTableThreshold={50}
+      virtualListHeight={560}
+      virtualRowHeight={74}
     />
   );
 };

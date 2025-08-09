@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { create } from 'zustand';
+import { logger } from '@/shared/utils/logger'
 import { persist } from 'zustand/middleware';
 import { authService, type AuthUser } from '@/shared/services/supabase';
 import { logger } from '@/shared/utils/logger';
@@ -153,7 +154,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           const count = await authService.getPendingRegistrationRequestsCount();
           set({ pendingUsersCount: count });
         } catch (error) {
-          console.error('Error updating pending users count:', error);
+    logger.error('authStore.updatePendingUsersCount error', error as unknown as Error);
         }
       },
 

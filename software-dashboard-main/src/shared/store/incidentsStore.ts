@@ -3,11 +3,13 @@
 // Arquitectura de Software Profesional - Gestión de Estado de Incidencias
 // =============================================================================
 
-import { FilterValues } from '@/shared/types/common.types';
-import { dataService } from '@/shared/services/supabase';
-import { incidentsRepository, type IncidentQuery } from '@/shared/repositories/IncidentsRepository';
-import type { IncidentDomain, IncidentMetricsDomain } from '@/shared/domain/incident';
-import { createPaginatedEntityStore } from '@/shared/store/factories/createPaginatedEntityStore'
+import type { FilterValues } from '@/shared/types/common.types'
+import { dataService } from '@/shared/services/supabase'
+import { incidentsRepository, type IncidentQuery } from '@/shared/repositories/IncidentsRepository'
+import type { IncidentDomain, IncidentMetricsDomain } from '@/shared/domain/incident'
+import { createPaginatedEntityStore } from '@/shared/store/createPaginatedEntityStore'
+// import { logAndExtractError } from '@/shared/utils/errorUtils'
+import { withOptimisticItems, updateItemById, removeItemById, prependPlaceholder } from '@/shared/store/optimistic'
 
 // =============================================================================
 // INCIDENTS STATE - Estado de incidencias
@@ -69,231 +71,136 @@ export interface IncidentsActions {
 // INCIDENTS STORE - Store completo de incidencias
 // =============================================================================
 
-export const useIncidentsStore = createPaginatedEntityStore<IncidentDomain, IncidentQuery, IncidentMetricsDomain, FilterValues>({
-  initialStats: { totalIncidents: 0, openIncidents: 0, inProgressIncidents: 0, resolvedIncidents: 0, closedIncidents: 0 },
-  initialFilters: {},
-  buildQuery: (state) => ({
-    page: state.currentPage,
-    limit: state.itemsPerPage,
-    search: state.searchQuery,
-    filters: {
-      status: state.filters.status as string | undefined,
-      priority: state.filters.priority as string | undefined,
-      type: state.filters.type as string | undefined,
-      assignedTo: state.filters.assignedTo as string | undefined,
-      createdBy: state.filters.createdBy as string | undefined,
-      department: state.filters.department as string | undefined,
-      dateFrom: state.filters.dateFrom as string | undefined,
-      dateTo: state.filters.dateTo as string | undefined,
-    }
-  }),
-  list: (q) => incidentsRepository.list(q),
-  metrics: () => incidentsRepository.metrics(),
-  computeMetricsFallback: (items) => ({
-    totalIncidents: items.length,
-    openIncidents: items.filter(i => i.status === 'open').length,
-    inProgressIncidents: items.filter(i => i.status === 'in_progress').length,
-    resolvedIncidents: items.filter(i => i.status === 'resolved').length,
-    closedIncidents: items.filter(i => i.status === 'closed').length,
-  }),
-}, (useBase) => ({
-  // =============================================================================
-  // INITIAL STATE - Estado inicial
-  // =============================================================================
-  
-  incidents: [],
-  loading: false,
-  error: null,
-  filters: {},
-  searchQuery: '',
-  currentPage: 1,
-  totalPages: 1,
-  itemsPerPage: 10,
-  totalItems: 0,
-  hasMore: true,
-  loadedPages: 0,
-  stats: {
+// Base store con factory genérica (paginación/filtrado/metrics)
+type IncidentQueryCompat = {
+  page?: number
+  limit?: number
+  search?: string
+  filters?: FilterValues
+}
+
+const useIncidentsBase = createPaginatedEntityStore<
+  IncidentDomain,
+  IncidentQueryCompat,
+  {
+    totalIncidents: number
+    openIncidents: number
+    inProgressIncidents: number
+    resolvedIncidents: number
+    closedIncidents: number
+  },
+  IncidentDomain,
+  FilterValues
+>({
+  initialStats: {
     totalIncidents: 0,
     openIncidents: 0,
     inProgressIncidents: 0,
     resolvedIncidents: 0,
-    closedIncidents: 0
+    closedIncidents: 0,
   },
+  defaultItemsPerPage: 10,
+  list: (query) => incidentsRepository.list({
+    page: query.page,
+    limit: query.limit,
+    search: query.search,
+    filters: query.filters,
+  } as IncidentQuery),
+  metrics: () => incidentsRepository.metrics(),
+  mapToDomain: (i) => i,
+})
 
-  // =============================================================================
-  // CRUD ACTIONS - Acciones CRUD
-  // =============================================================================
 
+// Extensiones específicas del dominio para mantener API previa sin romper componentes
+useIncidentsBase.setState(() => ({
+  // Carga con compatibilidad
+  // loadIncidents(filters?): aplica filtros (si llegan) y dispara load()
+  // loadMoreIncidents(): hace delegación a loadMore()
+  // setSearchQuery(): delega a setSearch()
+  // setCurrentPage / setItemsPerPage: delega a setPage / setPageSize
+  // clearError(): utilidad pequeña
+  // CRUD: create/update/delete vía servicios existentes y recarga
+  // Nota: estas claves nuevos conviven con el estado del factory
   loadIncidents: async (filters?: FilterValues) => {
-    set({ loading: true, error: null });
-    try {
-      const currentFilters = filters || get().filters;
-      const searchQuery = get().searchQuery;
-      const currentPage = get().currentPage;
-      const itemsPerPage = get().itemsPerPage;
-
-      const query: IncidentQuery = {
-        page: currentPage,
-        limit: itemsPerPage,
-        search: searchQuery,
-        filters: {
-          status: currentFilters.status as string | undefined,
-          priority: currentFilters.priority as string | undefined,
-          type: currentFilters.type as string | undefined,
-          assignedTo: currentFilters.assignedTo as string | undefined,
-          createdBy: currentFilters.createdBy as string | undefined,
-          department: currentFilters.department as string | undefined,
-          dateFrom: currentFilters.dateFrom as string | undefined,
-          dateTo: currentFilters.dateTo as string | undefined,
-        }
-      }
-
-      const result = await incidentsRepository.list(query)
-      const totalPages = Math.ceil(result.total / itemsPerPage)
-
-      set((state) => ({
-        incidents: currentPage === 1 ? result.items : [...state.incidents, ...result.items],
-        totalItems: result.total,
-        totalPages,
-        hasMore: result.hasMore,
-        loadedPages: result.page,
-        loading: false,
-        error: null
-      }))
-      get().updateStats()
-    } catch (error) {
-      set({ loading: false, error: error instanceof Error ? error.message : 'Error al cargar incidencias' })
+    if (filters) {
+      useIncidentsBase.getState().setFilters(filters)
     }
+    await useIncidentsBase.getState().load()
   },
-
-  // Cargar siguiente página (scroll infinito)
   loadMoreIncidents: async () => {
-    const { hasMore, currentPage } = get();
-    if (!hasMore) return;
-    set({ currentPage: currentPage + 1 });
-    await get().loadIncidents();
+    await useIncidentsBase.getState().loadMore()
   },
-
-  createIncident: async (incidentData) => {
-    set({ loading: true, error: null });
-    
-    try {
-      const { edgeFunctionsService } = await import('@/shared/services/supabase');
-      await edgeFunctionsService.createIncident(incidentData);
-      set({ currentPage: 1 });
-      await get().loadIncidents();
-    } catch (error) {
-      set({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Error al crear incidencia'
-      });
-    }
-  },
-
-  updateIncident: async (id: string, updates: any) => {
-    set({ loading: true, error: null });
-    
-    try {
-      await dataService.updateIncident(id, updates);
-      set({ currentPage: 1 });
-      await get().loadIncidents();
-    } catch (error) {
-      set({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Error al actualizar incidencia'
-      });
-    }
-  },
-
-  deleteIncident: async (id: string) => {
-    set({ loading: true, error: null });
-    
-    try {
-      await dataService.deleteIncident(id);
-      set({ currentPage: 1 });
-      await get().loadIncidents();
-    } catch (error) {
-      set({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Error al eliminar incidencia'
-      });
-    }
-  },
-
-  // =============================================================================
-  // FILTERS AND SEARCH ACTIONS - Acciones de filtros y búsqueda
-  // =============================================================================
-
-  setFilters: (filters: FilterValues) => {
-    set({ filters, currentPage: 1, hasMore: true });
-    get().loadIncidents(filters);
-  },
-
   setSearchQuery: (query: string) => {
-    set({ searchQuery: query, currentPage: 1, hasMore: true });
-    get().loadIncidents();
+    useIncidentsBase.getState().setSearch(query)
+    // sincronización posterior en próxima carga
   },
-
-  clearFilters: () => {
-    set({ 
-      filters: {}, 
-      searchQuery: '', 
-      currentPage: 1,
-      hasMore: true
-    });
-    get().loadIncidents();
-  },
-
-  // =============================================================================
-  // PAGINATION ACTIONS - Acciones de paginación
-  // =============================================================================
-
   setCurrentPage: (page: number) => {
-    set({ currentPage: page });
-    get().loadIncidents();
+    useIncidentsBase.getState().setPage(page)
+    // sincronización posterior en próxima carga
   },
-
   setItemsPerPage: (items: number) => {
-    set({ itemsPerPage: items, currentPage: 1 });
-    get().loadIncidents();
+    useIncidentsBase.getState().setPageSize(items)
+    // sincronización posterior en próxima carga
   },
-
-  // =============================================================================
-  // STATE MANAGEMENT ACTIONS - Acciones de gestión de estado
-  // =============================================================================
-
-  setLoading: (loading: boolean) => {
-    set({ loading });
-  },
-
-  setError: (error: string | null) => {
-    set({ error });
-  },
-
-  clearError: () => {
-    set({ error: null });
-  },
-
-  // =============================================================================
-  // STATISTICS ACTIONS - Acciones de estadísticas
-  // =============================================================================
-
-  updateStats: () => {
-    import('@/shared/services/supabase').then(async ({ edgeFunctionsService }) => {
-      try {
-        const metrics = await edgeFunctionsService.getIncidentMetrics();
-        set({ stats: metrics });
-      } catch {
-        const incidents = get().incidents;
-        const stats: IncidentMetricsDomain = {
-          totalIncidents: incidents.length,
-          openIncidents: incidents.filter(i => i.status === 'open').length,
-          inProgressIncidents: incidents.filter(i => i.status === 'in_progress').length,
-          resolvedIncidents: incidents.filter(i => i.status === 'resolved').length,
-          closedIncidents: incidents.filter(i => i.status === 'closed').length
-        };
-        set({ stats });
+  clearError: () => useIncidentsBase.setState({ error: null }),
+  createIncident: async (incidentData: Partial<IncidentDomain>) => {
+    const adapter = { get: useIncidentsBase.getState, set: useIncidentsBase.setState }
+    await withOptimisticItems<IncidentDomain, ReturnType<typeof useIncidentsBase.getState>>(adapter as any, (items) => {
+      const tempId = `temp-${Date.now()}`
+      const placeholder: IncidentDomain = {
+        id: tempId,
+        title: incidentData.title || 'Creando...',
+        description: incidentData.description || '',
+        status: (incidentData.status as any) || 'open',
+        priority: (incidentData.priority as any) || 'medium',
+        type: (incidentData.type as any) || 'other',
+        createdAt: new Date().toISOString(),
+        affectedAreaName: incidentData.affectedAreaName ?? null,
+        assigneeName: incidentData.assigneeName ?? null,
+        creatorName: incidentData.creatorName ?? null,
+        estimatedResolutionDate: incidentData.estimatedResolutionDate ?? null,
+        timeRemaining: null,
       }
+      return prependPlaceholder(items, placeholder)
+    }, async () => {
+      const { edgeFunctionsService } = await import('@/shared/services/supabase')
+      await edgeFunctionsService.createIncident({
+        title: incidentData.title || '',
+        description: incidentData.description || '',
+        type: (incidentData.type as string) || 'other',
+        priority: (incidentData.priority as string) || 'medium',
+        affected_area_id: ''
+      })
+      useIncidentsBase.setState({ currentPage: 1 })
+      await useIncidentsBase.getState().load()
     })
+  },
+  updateIncident: async (id: string, updates: Partial<IncidentDomain>) => {
+    const adapter = { get: useIncidentsBase.getState, set: useIncidentsBase.setState }
+    await withOptimisticItems<IncidentDomain, ReturnType<typeof useIncidentsBase.getState>>(adapter as any, (items) => updateItemById(items, id, (curr) => ({ ...curr, ...updates })), async () => {
+      await dataService.updateIncident(id, updates)
+      await useIncidentsBase.getState().load()
+    })
+  },
+  deleteIncident: async (id: string) => {
+    const adapter = { get: useIncidentsBase.getState, set: useIncidentsBase.setState }
+    await withOptimisticItems<IncidentDomain, ReturnType<typeof useIncidentsBase.getState>>(adapter as any, (items) => removeItemById(items, id), async () => {
+      await dataService.deleteIncident(id)
+      await useIncidentsBase.getState().load()
+    })
+  },
+}))
+
+export const useIncidentsStore = useIncidentsBase as unknown as (typeof useIncidentsBase & {
+  getState: () => ReturnType<typeof useIncidentsBase.getState> & {
+    loadIncidents: (filters?: FilterValues) => Promise<void>
+    loadMoreIncidents: () => Promise<void>
+    setSearchQuery: (query: string) => void
+    setCurrentPage: (page: number) => void
+    setItemsPerPage: (items: number) => void
+    createIncident: (incidentData: unknown) => Promise<void>
+    updateIncident: (id: string, updates: unknown) => Promise<void>
+    deleteIncident: (id: string) => Promise<void>
+    clearError: () => void
   }
-})); 
+})

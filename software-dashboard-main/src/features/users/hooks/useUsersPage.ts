@@ -6,11 +6,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuthStore, useUsersStore } from '@/shared/store';
-import { selectUsers, selectUsersLoading } from '@/shared/store/selectors'
-import { shallow } from 'zustand/shallow'
 import { authService } from '@/shared/services/supabase';
 import { User, PendingUser } from '@/shared/types/common.types';
 import { useComponentRefresh } from '@/shared/hooks/useCentralizedRefresh.tsx';
+import { logger } from '@/shared/utils/logger'
 
 // =============================================================================
 // USE USERS PAGE - Hook principal
@@ -22,15 +21,15 @@ export const useUsersPage = () => {
   // =============================================================================
 
   const { user: currentUser, updatePendingUsersCount } = useAuthStore();
-  const users = useUsersStore(selectUsers)
-  const loading = useUsersStore(selectUsersLoading)
-  const { error, loadUsers, createUser, updateUser, deleteUser } = useUsersStore(s => ({
-    error: s.error,
-    loadUsers: s.loadUsers,
-    createUser: s.createUser,
-    updateUser: s.updateUser,
-    deleteUser: s.deleteUser,
-  }), shallow)
+  const { 
+    users, 
+    loading, 
+    error, 
+    loadUsers, 
+    createUser, 
+    updateUser, 
+    deleteUser 
+  } = useUsersStore();
 
   // =============================================================================
   // LOCAL STATE - Estado local del componente
@@ -94,7 +93,7 @@ export const useUsersPage = () => {
       }));
       setPendingUsers(pendingUsers);
     } catch (error) {
-      console.error('Error cargando usuarios pendientes:', error);
+      logger.error('useUsersPage: Error cargando usuarios pendientes', error as Error);
     }
   }, []);
 
@@ -123,7 +122,7 @@ export const useUsersPage = () => {
       closeForm();
       manualRefresh();
     } catch (error) {
-      console.error('Error creando usuario:', error);
+      logger.error('useUsersPage: Error creando usuario', error as Error);
       toast.error('Error creando usuario');
     }
   }, [createUser, closeForm, manualRefresh]);
@@ -137,7 +136,7 @@ export const useUsersPage = () => {
       closeForm();
       manualRefresh();
     } catch (error) {
-      console.error('Error actualizando usuario:', error);
+      logger.error('useUsersPage: Error actualizando usuario', error as Error);
       toast.error('Error actualizando usuario');
     }
   }, [editingUser, updateUser, closeForm, manualRefresh]);
@@ -148,7 +147,7 @@ export const useUsersPage = () => {
       toast.success('Usuario eliminado exitosamente');
       manualRefresh();
     } catch (error) {
-      console.error('Error eliminando usuario:', error);
+      logger.error('useUsersPage: Error eliminando usuario', error as Error);
       toast.error('Error eliminando usuario');
     }
   }, [deleteUser, manualRefresh]);
@@ -167,7 +166,7 @@ export const useUsersPage = () => {
       updatePendingUsersCount();
       manualRefresh();
     } catch (error) {
-      console.error('Error aprobando usuario:', error);
+      logger.error('useUsersPage: Error aprobando usuario', error as Error);
       toast.error('Error aprobando usuario');
     }
   }, [currentUser, loadPendingUsers, updatePendingUsersCount, manualRefresh]);
@@ -182,7 +181,7 @@ export const useUsersPage = () => {
       updatePendingUsersCount();
       manualRefresh();
     } catch (error) {
-      console.error('Error rechazando solicitud:', error);
+      logger.error('useUsersPage: Error rechazando solicitud', error as Error);
       toast.error('Error rechazando solicitud');
     }
   }, [currentUser, loadPendingUsers, updatePendingUsersCount, manualRefresh]);

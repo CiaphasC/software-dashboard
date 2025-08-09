@@ -12,7 +12,6 @@ import {
   Bug, 
   ChevronDown, 
   AlertCircle, 
-  User,
   Zap,
   Clock,
   CheckCircle
@@ -24,6 +23,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { useAuthStore } from '@/shared/store';
 import { dataService, edgeFunctionsService, type CreateIncidentData } from '@/shared/services/supabase';
+import { logger } from '@/shared/utils/logger'
 import type { Department } from '@/shared/services/supabase/types';
 
 // =============================================================================
@@ -102,11 +102,9 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
   loading = false,
   initialData,
   isEdit = false,
-  userRole = 'requester',
-  incidentStatus = 'open',
   isReadOnly = false,
   allowedFields = ['title', 'description', 'affectedArea', 'type', 'priority', 'assignedTo'],
-  canEditStatus = false,
+  // canEditStatus = false,
   canEditArea = true,
   canEditContent = true
 }) => {
@@ -123,7 +121,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
 
   // Lógica de permisos
   const isReadOnlyMode = isReadOnly || !canEditContent;
-  const canShowStatusField = canEditStatus && allowedFields.includes('status');
+  // const canShowStatusField = canEditStatus && allowedFields.includes('status');
   const canShowAreaField = canEditArea && allowedFields.includes('affectedArea');
   const canShowTitleField = allowedFields.includes('title');
   const canShowDescriptionField = allowedFields.includes('description');
@@ -138,7 +136,6 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
     reset,
     watch,
     setValue,
-    getValues,
     trigger
   } = useForm<IncidentFormData>({
     resolver: zodResolver(incidentSchema),
@@ -205,7 +202,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
       const areasData = await dataService.getDepartments();
       setAreas(areasData);
     } catch (error) {
-      console.error('Error loading areas:', error);
+      logger.error('IncidentForm: Error loading areas', error as Error);
     } finally {
       setIsAreasLoading(false);
     }
@@ -214,10 +211,10 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
   const loadUsers = async () => {
     try {
       const usersResponse = await edgeFunctionsService.listUsers();
-      const usersData = usersResponse.items;
+      const usersData = usersResponse.items as Array<{ id: string; name: string; email: string; role_name: string }>
       
       // Asegurar que el usuario actual esté en la lista
-      const currentUserInList = usersData.find((u: any) => u.id === user?.id);
+      const currentUserInList = usersData.find((u) => u.id === user?.id);
       if (user && !currentUserInList) {
         setUsers([...usersData, {
           id: user.id,
@@ -229,7 +226,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
         setUsers(usersData);
       }
     } catch (error) {
-      console.error('Error loading users:', error);
+      logger.error('IncidentForm: Error loading users', error as Error);
       // Si falla la carga, al menos incluir al usuario actual
       if (user) {
         setUsers([{
@@ -243,7 +240,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
   };
 
   const handleAreaSelect = (area: Area) => {
-    console.log('🔍 handleAreaSelect - Area seleccionada:', area);
+    logger.debug('handleAreaSelect', area);
     const areaId = area.id.toString();
     
     setValue('affectedArea', areaId, { 
@@ -323,8 +320,8 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
     
     setIsSubmitting(true);
     try {
-      console.log('=== FORM SUBMIT STARTED ===');
-      console.log('Form data:', data);
+      logger.debug('FORM SUBMIT STARTED');
+      logger.debug('Form data', data);
       
       // Validar que affectedArea no esté vacío
       if (!data.affectedArea || data.affectedArea.trim() === '') {
@@ -341,7 +338,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
         assigned_to: data.assignedTo && data.assignedTo !== user?.name ? data.assignedTo : null,
       };
       
-      console.log('Edge function data:', edgeFunctionData);
+      logger.debug('Edge function data', edgeFunctionData);
       
       // Llamar onSubmit que manejará la creación
       await onSubmit(edgeFunctionData);
@@ -349,7 +346,7 @@ export const IncidentForm: React.FC<IncidentFormProps> = ({
       reset();
       onClose();
     } catch (error) {
-      console.error('Error submitting incident:', error);
+      logger.error('IncidentForm: Error submitting incident', error as Error);
       throw error;
     } finally {
       setIsSubmitting(false);

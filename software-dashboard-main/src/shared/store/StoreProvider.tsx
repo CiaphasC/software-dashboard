@@ -11,6 +11,8 @@ import { useRequirementsStore } from '@/shared/store/requirementsStore';
 import { useSettingsStore } from '@/shared/store/settingsStore';
 import { AuthInitializer } from '@/shared/components/auth/AuthInitializer';
 import { RefreshProvider } from '@/shared/hooks/useCentralizedRefresh.tsx';
+import { subscribeTable } from '@/shared/services/supabase/realtime';
+import type { Incident, Requirement } from '@/shared/services/supabase/types';
 
 // =============================================================================
 // STORE CONTEXT - Contexto para los stores
@@ -66,6 +68,29 @@ export const StoreProvider: React.FC<StoreProviderProps> = ({ children }) => {
       // Nota: la carga de usuarios/incidencias/requerimientos ocurre on-demand por ruta.
     }
   }, [auth.isAuthenticated, auth.user]);
+
+  // =============================================================================
+  // REALTIME - Suscripción a cambios de incidents/requirements
+  // =============================================================================
+  useEffect(() => {
+    if (!auth.isAuthenticated) return
+    const unsubInc = subscribeTable<Incident>('incidents', {
+      ignoreSession: true,
+      onInsert: () => useIncidentsStore.getState().load(),
+      onUpdate: () => useIncidentsStore.getState().load(),
+      onDelete: () => useIncidentsStore.getState().load(),
+    })
+    const unsubReq = subscribeTable<Requirement>('requirements', {
+      ignoreSession: true,
+      onInsert: () => useRequirementsStore.getState().load(),
+      onUpdate: () => useRequirementsStore.getState().load(),
+      onDelete: () => useRequirementsStore.getState().load(),
+    })
+    return () => {
+      unsubInc()
+      unsubReq()
+    }
+  }, [auth.isAuthenticated])
 
   // =============================================================================
   // SESSION MANAGEMENT - Gestión de sesión

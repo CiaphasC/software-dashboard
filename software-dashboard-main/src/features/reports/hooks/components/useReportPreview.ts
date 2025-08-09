@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { logger } from '@/shared/utils/logger'
 import { useIncidentsStore } from '@/shared/store/incidentsStore';
 import { useRequirementsStore } from '@/shared/store/requirementsStore';
 import { dataService } from '@/shared/services/supabase';
@@ -61,7 +62,7 @@ export const useReportPreview = (): UseReportPreviewReturn => {
       });
     } catch (err) {
       setError('Error al cargar los datos del reporte');
-      console.error('Error fetching report data:', err);
+      logger.error('useReportPreview: Error fetching report data', err as Error);
     } finally {
       setIsLoading(false);
     }

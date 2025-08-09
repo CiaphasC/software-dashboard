@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { log } from '@/shared/utils/logger';
+import { log, logger } from '@/shared/utils/logger';
 import { DashboardService } from '@/features/dashboard/services';
 import { DashboardMetrics } from '@/shared/types/common.types';
 
@@ -37,11 +37,11 @@ export const useDashboardMetrics = () => {
           log('Dashboard metrics received:', response.data);
           setMetrics(response.data);
         } else {
-          console.error('Error fetching dashboard metrics:', response.error);
+          logger.error('useDashboardMetrics: Error fetching dashboard metrics', new Error(response.error || 'Unknown error'));
           setError(response.error || 'Error al cargar las métricas del dashboard');
         }
       } catch (err) {
-        console.error('Error fetching dashboard metrics:', err);
+        logger.error('useDashboardMetrics: Error fetching dashboard metrics', err as Error);
         setError('Error al cargar las métricas del dashboard');
       } finally {
         setLoading(false);
@@ -63,7 +63,7 @@ export const useDashboardMetrics = () => {
         setError(response.error || 'Error al recargar las métricas del dashboard');
       }
     } catch (err) {
-      console.error('Error refetching dashboard metrics:', err);
+      logger.error('useDashboardMetrics: Error refetching dashboard metrics', err as Error);
       setError('Error al recargar las métricas del dashboard');
     } finally {
       setLoading(false);

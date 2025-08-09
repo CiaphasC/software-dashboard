@@ -181,19 +181,35 @@ export const UsersList: React.FC<UsersListProps> = ({
     )
   }
 
-  const renderUserTable = () => (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-      <div className="bg-gray-50 px-6 py-3 text-sm font-semibold text-gray-700">Usuarios</div>
-      <VirtualList
-        height={480}
-        width={'100%'}
-        itemCount={filteredUsers.length}
-        itemSize={64}
-      >
-        {Row}
-      </VirtualList>
-    </div>
-  );
+  const renderUserTable = () => {
+    // Si hay pocos usuarios, render normal sin virtualización ni scroll
+    if (filteredUsers.length <= 20) {
+      return (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-gray-50 px-6 py-3 text-sm font-semibold text-gray-700">Usuarios</div>
+          <div className="w-full">
+            {filteredUsers.map((_, index) => (
+              <Row key={filteredUsers[index].id} index={index} style={{ height: 64 }} />
+            ))}
+          </div>
+        </div>
+      )
+    }
+    const computedHeight = Math.min(480, Math.max(64, filteredUsers.length * 64))
+    return (
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="bg-gray-50 px-6 py-3 text-sm font-semibold text-gray-700">Usuarios</div>
+        <VirtualList
+          height={computedHeight}
+          width={'100%'}
+          itemCount={filteredUsers.length}
+          itemSize={64}
+        >
+          {Row}
+        </VirtualList>
+      </div>
+    )
+  };
 
   // =============================================================================
   // RENDER - Renderizado del componente
@@ -219,7 +235,7 @@ export const UsersList: React.FC<UsersListProps> = ({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.4 }}
-            className="hidden xl:block"
+            className="block"
           >
             {renderUserTable()}
           </motion.div>

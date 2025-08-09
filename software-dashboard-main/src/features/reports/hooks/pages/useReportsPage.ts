@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { logger } from '@/shared/utils/logger'
 import { useNavigate } from 'react-router-dom';
 import { reportService } from '@/features/reports/services/ReportService';
 import { useReportConfig, ReportConfig } from '@/features/reports/hooks/components/useReportConfig';
@@ -70,7 +71,7 @@ export const useReportsPage = (): UseReportsPageReturn => {
       });
     } catch (err) {
       setError('Error al cargar los datos del reporte');
-      console.error('Error fetching report data:', err);
+      logger.error('useReportsPage: Error fetching report data', err as Error);
     } finally {
       setLoading(false);
     }
@@ -100,7 +101,7 @@ export const useReportsPage = (): UseReportsPageReturn => {
         includeCharts: reportConfig.includeCharts
       });
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      logger.error('useReportsPage: Error generating PDF', error as Error);
       throw error;
     } finally {
       setGenerating(false);
@@ -121,7 +122,7 @@ export const useReportsPage = (): UseReportsPageReturn => {
         includeCharts: reportConfig.includeCharts
       });
     } catch (error) {
-      console.error('Error generating Excel:', error);
+      logger.error('useReportsPage: Error generating Excel', error as Error);
       throw error;
     } finally {
       setGenerating(false);
@@ -142,7 +143,7 @@ export const useReportsPage = (): UseReportsPageReturn => {
         includeCharts: reportConfig.includeCharts
       });
     } catch (error) {
-      console.error('Error generating CSV:', error);
+      logger.error('useReportsPage: Error generating CSV', error as Error);
       throw error;
     } finally {
       setGenerating(false);
@@ -166,7 +167,7 @@ export const useReportsPage = (): UseReportsPageReturn => {
           throw new Error(`Formato no soportado: ${reportConfig.format}`);
       }
     } catch (error) {
-      console.error('Error generating report:', error);
+      logger.error('useReportsPage: Error generating report', error as Error);
       throw error;
     }
   }, [reportConfig.format, generatePDF, generateExcel, generateCSV]);

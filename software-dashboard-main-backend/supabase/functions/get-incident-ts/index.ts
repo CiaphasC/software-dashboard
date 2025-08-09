@@ -56,55 +56,60 @@ serve(async (req) => {
     const action = body.action
 
     if (action === 'list') {
-      const { page = 1, limit = 20, search, filters } = body.params || {}
+      const { page: rawPage = 1, limit = 20, search, filters } = body.params || {}
 
-      let query = supabase
+      // Construir consulta base (sin rango) para poder obtener el total primero
+      let base = supabase
         .from('incidents_with_times')
         .select('*', { count: 'exact' })
 
       // Filtros
       if (filters) {
-        if (filters.status) query = query.eq('status', filters.status)
-        if (filters.priority) query = query.eq('priority', filters.priority)
-        if (filters.type) query = query.eq('type', filters.type)
-        if (filters.assignedTo) query = query.eq('assigned_to', filters.assignedTo)
-        if (filters.createdBy) query = query.eq('created_by', filters.createdBy)
-        if (filters.department) query = query.eq('affected_area_name', filters.department)
-        if (filters.dateFrom) query = query.gte('created_at', filters.dateFrom)
-        if (filters.dateTo) query = query.lte('created_at', filters.dateTo)
+        if (filters.status) base = base.eq('status', filters.status)
+        if (filters.priority) base = base.eq('priority', filters.priority)
+        if (filters.type) base = base.eq('type', filters.type)
+        if (filters.assignedTo) base = base.eq('assigned_to', filters.assignedTo)
+        if (filters.createdBy) base = base.eq('created_by', filters.createdBy)
+        if (filters.department) base = base.eq('affected_area_name', filters.department)
+        if (filters.dateFrom) base = base.gte('created_at', filters.dateFrom)
+        if (filters.dateTo) base = base.lte('created_at', filters.dateTo)
       }
 
-      // Búsqueda
       if (search && search.trim().length > 0) {
-        query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`)
+        base = base.or(`title.ilike.%${search}%,description.ilike.%${search}%`)
       }
 
-      // Orden por fecha desc
-      query = query.order('created_at', { ascending: false })
+      // Obtener total primero (sin rango) para evitar 416 Requested Range Not Satisfiable
+      const { count: totalCount, error: countError } = await base
+        .select('*', { count: 'exact', head: true })
+      if (countError) throw countError
+      const total = totalCount || 0
 
-      // Paginación
+      // Calcular página efectiva
+      const lastPage = Math.max(1, Math.ceil(total / Math.max(1, limit)))
+      const page = Math.min(Math.max(1, rawPage), lastPage)
+
+      // Si no hay datos, devolver vacío sin consultar rango
+      if (total === 0) {
+        return new Response(JSON.stringify({
+          success: true,
+          data: { items: [], total: 0, page: 1, limit, hasMore: false }
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+      }
+
+      // Consultar página efectiva
       const offset = (page - 1) * limit
-      query = query.range(offset, offset + limit - 1)
-
-      const { data, error, count } = await query
+      const { data, error } = await base
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1)
       if (error) throw error
 
-      const total = count || 0
       const hasMore = page * limit < total
 
       return new Response(JSON.stringify({
         success: true,
-        data: {
-          items: data || [],
-          total,
-          page,
-          limit,
-          hasMore,
-        }
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
+        data: { items: data || [], total, page, limit, hasMore }
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
     }
 
     if (action === 'metrics') {

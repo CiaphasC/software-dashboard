@@ -28,6 +28,7 @@ import {
 } from '@/shared/components/ui';
 import { RequirementType, RequirementStatus, Priority } from '@/shared/types/common.types';
 import { dataService } from '@/shared/services/supabase';
+import { logger } from '@/shared/utils/logger'
 import type { Department } from '@/shared/services/supabase';
 
 // ============================================================================
@@ -158,7 +159,7 @@ export const RequirementForm: React.FC<RequirementFormProps> = ({
       const areasData = await dataService.getDepartments();
       setAreas(areasData);
     } catch (error) {
-      console.error('Error loading areas:', error);
+      logger.error('RequirementForm: Error loading areas', error as Error);
     } finally {
       setIsAreasLoading(false);
     }
@@ -181,7 +182,7 @@ export const RequirementForm: React.FC<RequirementFormProps> = ({
       reset();
       onClose();
     } catch (error) {
-      console.error('Error submitting requirement:', error);
+      logger.error('RequirementForm: Error submitting requirement', error as Error);
     }
   };
 

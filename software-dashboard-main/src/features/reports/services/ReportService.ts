@@ -6,6 +6,7 @@ import { PDFReportGenerator } from './generators/PDFReportGenerator';
 import { ExcelReportGenerator } from './generators/ExcelReportGenerator';
 import { CSVReportGenerator } from './generators/CSVReportGenerator';
 import { saveAs } from 'file-saver';
+import { logger } from '@/shared/utils/logger'
 
 interface ReportData {
   incidents: any[];
@@ -68,7 +69,7 @@ export class ReportService {
       // Descargar el archivo
       saveAs(blob, filename);
     } catch (error) {
-      console.error('Error generando reporte:', error);
+      logger.error('ReportService: Error generando reporte', error as Error);
       throw new Error(`Error al generar reporte ${format.toUpperCase()}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }

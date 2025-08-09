@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { LoadingScreen } from '@/shared/components/ui/LoadingSpinner';
+import { LoadingSpinner } from '@/shared/components/ui/LoadingSpinner';
 import { useAuth } from '@/shared/hooks/useAuth';
 import { Layout } from '@/shared/components/layout/Layout';
 
@@ -21,7 +21,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { user, loading } = useAuth();
   
   if (loading) {
-    return <LoadingScreen />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
   
   if (!user) {
@@ -49,18 +53,18 @@ export const AppRoutes: React.FC = () => {
   // Si no hay usuario autenticado, mostrar rutas públicas
   if (!user) {
     return (
-      <SuspenseWrapper>
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-white"><LoadingSpinner size="lg" /></div>}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-      </SuspenseWrapper>
+      </Suspense>
     );
   }
 
   // Si hay usuario autenticado, mostrar rutas protegidas
   return (
-    <SuspenseWrapper>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-white"><LoadingSpinner size="lg" /></div>}>
       <Layout>
         <Routes>
           {/* Rutas principales */}
@@ -127,6 +131,6 @@ export const AppRoutes: React.FC = () => {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Layout>
-    </SuspenseWrapper>
+    </Suspense>
   );
 }; 

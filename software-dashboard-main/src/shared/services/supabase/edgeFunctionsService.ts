@@ -5,6 +5,23 @@
 
 import { supabase } from './client';
 import { HttpClient } from '@/shared/services/http/httpClient';
+import type {
+  GetIncidentsListRequest,
+  GetIncidentsListResponse,
+  IncidentMetricsRequest,
+  IncidentMetricsResponse,
+  GetRequirementsListRequest,
+  GetRequirementsListResponse,
+  RequirementMetricsResponse,
+  UsersListParams,
+  GetUsersListResponse,
+} from '@/shared/services/supabase/apiTypes'
+import {
+  GetIncidentsListResponseSchema,
+  IncidentMetricsResponseSchema,
+  GetRequirementsListResponseSchema,
+  GetUsersListResponseSchema,
+} from '@/shared/services/supabase/apiSchemas'
 
 // =============================================================================
 // TYPES - Tipos para edge functions
@@ -65,7 +82,7 @@ export class EdgeFunctionsService {
     const base = (import.meta.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321') + '/functions/v1'
     this.http = new HttpClient(base)
   }
-  
+
   // Helper para obtener el token de autenticación
   private async getAuthToken(): Promise<string> {
     const { data: { session } } = await supabase.auth.getSession();
@@ -77,9 +94,9 @@ export class EdgeFunctionsService {
 
   // Helper genérico para llamar edge functions
   private async callEdgeFunction<TResponse>(functionName: string, data: unknown): Promise<TResponse> {
-    const token = await this.getAuthToken();
+      const token = await this.getAuthToken();
     const res = await this.http.request<EdgeFunctionResponse<TResponse>>(`/${functionName}`, {
-      method: 'POST',
+        method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
       body: data,
       timeoutMs: 30000,
@@ -136,29 +153,20 @@ export class EdgeFunctionsService {
   }
 
   // Lista paginada de incidencias mediante Edge Function
-  async listIncidents(params: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    filters?: Record<string, unknown>;
-  }): Promise<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }> {
-    const data = await this.callEdgeFunction<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }>('get-incident-ts', {
-      action: 'list',
-      params,
-    });
-    return data;
+  async listIncidents(params: GetIncidentsListRequest['params']): Promise<GetIncidentsListResponse> {
+    const data = await this.callEdgeFunction<GetIncidentsListResponse>('get-incident-ts', { action: 'list', params } as GetIncidentsListRequest)
+    // Validación runtime de respuesta
+    const parsed = GetIncidentsListResponseSchema.safeParse(data)
+    if (!parsed.success) throw new Error('Respuesta inválida de get-incident-ts:list')
+    return parsed.data
   }
 
   // Métricas de incidencias mediante Edge Function
-  async getIncidentMetrics(): Promise<{
-    totalIncidents: number;
-    openIncidents: number;
-    inProgressIncidents: number;
-    resolvedIncidents: number;
-    closedIncidents: number;
-  }> {
-    const data = await this.callEdgeFunction<{ totalIncidents: number; openIncidents: number; inProgressIncidents: number; resolvedIncidents: number; closedIncidents: number; }>('get-incident-ts', { action: 'metrics' });
-    return data;
+  async getIncidentMetrics(): Promise<IncidentMetricsResponse> {
+    const data = await this.callEdgeFunction<IncidentMetricsResponse>('get-incident-ts', { action: 'metrics' } as IncidentMetricsRequest)
+    const parsed = IncidentMetricsResponseSchema.safeParse(data)
+    if (!parsed.success) throw new Error('Respuesta inválida de get-incident-ts:metrics')
+    return parsed.data
   }
 
   // =============================================================================
@@ -194,31 +202,60 @@ export class EdgeFunctionsService {
   }
 
   // Lista de requerimientos (Edge Function si existe, sino fallback a vista)
-  async listRequirements(params: { page?: number; limit?: number; search?: string; filters?: Record<string, unknown> }): Promise<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }> {
+  async listRequirements(params: GetRequirementsListRequest['params']): Promise<GetRequirementsListResponse> {
     try {
-      // Intentar edge function simétrica a incidents
-      const data = await this.callEdgeFunction<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }>('get-requirement-ts', { action: 'list', params });
-      return data;
+      const data = await this.callEdgeFunction<GetRequirementsListResponse>('get-requirement-ts', { action: 'list', params } as GetRequirementsListRequest);
+      const parsed = GetRequirementsListResponseSchema.safeParse(data)
+      if (!parsed.success) throw new Error('Respuesta inválida de get-requirement-ts:list')
+      return parsed.data
     } catch {
-      // Fallback DAO normalizado
-      const { list } = await import('@/shared/services/data/requirementsDao')
-      return list(params)
+      // Fallback directo a Supabase
+      if (!import.meta.env.DEV) throw new Error('EdgeFunction get-requirement-ts no disponible')
+      const page = params.page ?? 1; const limit = params.limit ?? 10; const offset = (page - 1) * limit;
+      let query = supabase.from('requirements_with_times').select('*', { count: 'exact' });
+      const f = params.filters || {};
+      if (f.status) query = query.eq('status', f.status);
+      if (f.priority) query = query.eq('priority', f.priority);
+      if (f.type) query = query.eq('type', f.type);
+      if (f.assignedTo) query = query.eq('assigned_to', f.assignedTo);
+      if (f.createdBy) query = query.eq('created_by', f.createdBy);
+      if (f.department) query = query.eq('requesting_area_name', f.department);
+      if (f.dateFrom) query = query.gte('created_at', f.dateFrom);
+      if (f.dateTo) query = query.lte('created_at', f.dateTo);
+      if (params.search) query = query.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%`);
+      query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+      const { data, count, error } = await query;
+      if (error) throw error;
+      const total = count || 0; const hasMore = page * limit < total;
+      return { items: (data || []) as GetRequirementsListResponse['items'], total, page, limit, hasMore };
     }
   }
 
   async getRequirement(id: string): Promise<unknown | null> {
-    const { get } = await import('@/shared/services/data/requirementsDao')
-    return get(id)
+    const { data } = await supabase.from('requirements_with_times').select('*').eq('id', id).single();
+    return data ?? null;
   }
 
   async deleteRequirement(id: string): Promise<void> {
-    const { remove } = await import('@/shared/services/data/requirementsDao')
-    return remove(id)
+    const { error } = await supabase.from('requirements').delete().eq('id', id);
+    if (error) throw error;
   }
 
-  async getRequirementMetrics(): Promise<{ totalRequirements: number; pendingRequirements: number; inProgressRequirements: number; completedRequirements: number; deliveredRequirements: number; }> {
-    const { metrics } = await import('@/shared/services/data/requirementsDao')
-    return metrics()
+  async getRequirementMetrics(): Promise<RequirementMetricsResponse> {
+    const [totalRes, pendingRes, inProgRes, completedRes, deliveredRes] = await Promise.all([
+      supabase.from('requirements').select('*', { count: 'exact', head: true }),
+      supabase.from('requirements').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase.from('requirements').select('*', { count: 'exact', head: true }).eq('status', 'in_progress'),
+      supabase.from('requirements').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+      supabase.from('requirements').select('*', { count: 'exact', head: true }).eq('status', 'delivered'),
+    ])
+    return {
+      totalRequirements: totalRes.count || 0,
+      pendingRequirements: pendingRes.count || 0,
+      inProgressRequirements: inProgRes.count || 0,
+      completedRequirements: completedRes.count || 0,
+      deliveredRequirements: deliveredRes.count || 0,
+    }
   }
 
   // =============================================================================
@@ -246,14 +283,17 @@ export class EdgeFunctionsService {
   /**
    * USERS - Métodos estandarizados
    */
-  async listUsers(params?: { page?: number; limit?: number; search?: string; role?: string }): Promise<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }> {
+  async listUsers(params?: UsersListParams): Promise<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }> {
     const page = params?.page ?? 1; const limit = params?.limit ?? 20;
     try {
-      const all = await this.callEdgeFunction<unknown[]>('get-users-ts', { search: params?.search, role: params?.role });
-      const total = all.length; const start = (page - 1) * limit; const items = all.slice(start, start + limit); const hasMore = page * limit < total;
+      const all = await this.callEdgeFunction<GetUsersListResponse>('get-users-ts', { search: params?.search, role: params?.role });
+      const parsed = GetUsersListResponseSchema.safeParse(all)
+      if (!parsed.success) throw new Error('Respuesta inválida de get-users-ts')
+      const total = parsed.data.length; const start = (page - 1) * limit; const items = parsed.data.slice(start, start + limit); const hasMore = page * limit < total;
       return { items, total, page, limit, hasMore };
     } catch {
       // Fallback directo a perfiles
+      if (!import.meta.env.DEV) throw new Error('EdgeFunction get-users-ts no disponible')
       let query = supabase.from('profiles').select('id, name, email, role_name, department_id, is_active').eq('is_active', true)
       if (params?.role) query = query.eq('role_name', params.role)
       if (params?.search) {

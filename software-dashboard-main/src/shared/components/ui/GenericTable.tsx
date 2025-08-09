@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { FixedSizeList as VirtualList } from 'react-window';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MoreHorizontal, Eye, Edit, Trash2, Download, Filter,
@@ -11,6 +10,7 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { LoadingSpinner } from '@/shared/components/ui/LoadingSpinner';
 import { DateOrString } from '@/shared/types/common.types';
 import { formatDate } from '@/shared/utils/dateUtils';
+import { FixedSizeList as VirtualList } from 'react-window';
 
 // Helper function para formatear fechas de manera segura
 const safeFormatDate = (date: DateOrString): string => {
@@ -59,14 +59,6 @@ export interface TableConfig<T extends TableItem> {
     render?: (item: T) => React.ReactNode;
     mobile?: boolean;
   }[];
-  
-  // Virtualización opcional para tablas grandes (sólo vista 'table')
-  virtualization?: {
-    enabled?: boolean;
-    threshold?: number; // Número de items a partir del cual activar
-    height?: number;    // Alto del viewport virtualizado
-    rowHeight?: number; // Alto de cada fila
-  };
   
   // Configuración de acciones
   actions: {
@@ -124,6 +116,9 @@ interface GenericTableProps<T extends TableItem> {
   items: T[];
   loading: boolean;
   config: TableConfig<T>;
+  virtualizeTableThreshold?: number;
+  virtualListHeight?: number;
+  virtualRowHeight?: number;
 }
 
 // Componente de tarjeta genérico
@@ -336,60 +331,149 @@ const GenericCard = <T extends TableItem>({
   );
 };
 
-// Componente de tabla para desktop
+// Componente de tabla para desktop (con soporte de virtualización opcional)
 const DesktopTable = <T extends TableItem>({ 
   items, 
-  config 
+  config,
+  virtualize,
+  virtualListHeight = 560,
+  virtualRowHeight = 72,
 }: { 
   items: T[]; 
   config: TableConfig<T>; 
+  virtualize?: boolean;
+  virtualListHeight?: number;
+  virtualRowHeight?: number;
 }) => {
-  const { theme, columns, actions, statusConfig, priorityConfig, typeConfig, additionalFields, estimatedDateField } = config;
+  const { theme, columns, actions } = config;
 
-  return (
-    <div className={`overflow-hidden rounded-3xl border border-${theme.borderColor} bg-gradient-to-br from-white via-${theme.primaryColor}-50/20 to-white shadow-2xl backdrop-blur-sm`}>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className={`bg-gradient-to-r from-${theme.primaryColor}-50/80 via-${theme.secondaryColor}-50/60 to-${theme.primaryColor}-50/80`}>
-            <tr>
-              {columns.map((column) => (
-                <th key={String(column.key)} className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+  if (!virtualize) {
+    return (
+      <div className={`overflow-hidden rounded-3xl border border-${theme.borderColor} bg-gradient-to-br from-white via-${theme.primaryColor}-50/20 to-white shadow-2xl backdrop-blur-sm`}>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className={`bg-gradient-to-r from-${theme.primaryColor}-50/80 via-${theme.secondaryColor}-50/60 to-${theme.primaryColor}-50/80`}>
+              <tr>
+                {columns.map((column) => (
+                  <th key={String(column.key)} className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      {column.icon}
+                      {column.label}
+                    </div>
+                  </th>
+                ))}
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
-                    {column.icon}
-                    {column.label}
+                    <Settings className="h-4 w-4" />
+                    Acciones
                   </div>
                 </th>
+              </tr>
+            </thead>
+            <tbody className={`bg-white divide-y divide-${theme.borderColor}`}>
+              {items.map((item) => (
+                <tr
+                  key={item.id}
+                  className={`hover:bg-gradient-to-r hover:from-${theme.primaryColor}-50/50 hover:to-${theme.secondaryColor}-50/30 transition-colors duration-200 cursor-pointer group`}
+                  onClick={() => actions.onItemClick(item)}
+                >
+                  {columns.map((column) => (
+                    <td key={String(column.key)} className="px-6 py-4">
+                      {column.render ? column.render(item) : (
+                        <div className="space-y-0.5">
+                          <div className={`font-bold text-gray-900 group-hover:text-${theme.primaryColor}-700 transition-colors text-base`}>
+                            {item[column.key] instanceof Date ? formatDate(item[column.key]) : (item[column.key] ? String(item[column.key]) : 'Sin datos')}
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                  ))}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`p-2.5 hover:bg-${theme.primaryColor}-50 hover:text-${theme.primaryColor}-600 transition-all duration-300 rounded-xl`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            actions.onView(item);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2.5 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 rounded-xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            actions.onEdit(item);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2.5 hover:bg-red-50 hover:text-red-600 transition-all duration-300 rounded-xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            actions.onDelete(item);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </motion.div>
+                    </div>
+                  </td>
+                </tr>
               ))}
-              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                <div className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Acciones
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody className={`bg-white divide-y divide-${theme.borderColor}`}>
-            {items.map((item, index) => (
-              <motion.tr
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`hover:bg-gradient-to-r hover:from-${theme.primaryColor}-50/50 hover:to-${theme.secondaryColor}-50/30 transition-all duration-300 cursor-pointer group`}
-                onClick={() => actions.onItemClick(item)}
-              >
-                {columns.map((column) => (
-                  <td key={String(column.key)} className="px-6 py-4">
-                    {column.render ? column.render(item) : (
-                      <div className="space-y-0.5">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  // Virtualización con react-window (render basado en divs)
+  return (
+    <div className={`overflow-hidden rounded-3xl border border-${theme.borderColor} bg-white shadow-2xl`}>
+      <div className={`bg-gradient-to-r from-${theme.primaryColor}-50/80 via-${theme.secondaryColor}-50/60 to-${theme.primaryColor}-50/80 border-b border-${theme.borderColor}`}>
+        <div className="w-full grid items-center" style={{ gridTemplateColumns: `repeat(${columns.length + 1}, minmax(0, 1fr))` }}>
+          {columns.map((column) => (
+            <div key={String(column.key)} className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+              {column.icon}
+              {column.label}
+            </div>
+          ))}
+          <div className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Acciones
+          </div>
+        </div>
+      </div>
+      <div className={`divide-y divide-${theme.borderColor}`}>
+        <VirtualList height={virtualListHeight} width={'100%'} itemCount={items.length} itemSize={virtualRowHeight}>
+          {({ index, style }) => {
+            const item = items[index]
+            return (
+              <div style={style} className={`hover:bg-gradient-to-r hover:from-${theme.primaryColor}-50/50 hover:to-${theme.secondaryColor}-50/30 transition-all duration-300 cursor-pointer group`}
+                   onClick={() => actions.onItemClick(item)}>
+                <div className="w-full grid items-center px-6 py-3" style={{ gridTemplateColumns: `repeat(${columns.length + 1}, minmax(0, 1fr))` }}>
+                  {columns.map((column) => (
+                    <div key={String(column.key)} className="pr-4">
+                      {column.render ? column.render(item) : (
                         <div className={`font-bold text-gray-900 group-hover:text-${theme.primaryColor}-700 transition-colors text-base`}>
                           {item[column.key] instanceof Date ? formatDate(item[column.key]) : (item[column.key] ? String(item[column.key]) : 'Sin datos')}
                         </div>
-                      </div>
-                    )}
-                  </td>
-                ))}
-                <td className="px-6 py-4">
+                      )}
+                    </div>
+                  ))}
                   <div className="flex items-center gap-2">
                     <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                       <Button
@@ -431,115 +515,28 @@ const DesktopTable = <T extends TableItem>({
                       </Button>
                     </motion.div>
                   </div>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-// Versión virtualizada para datasets muy grandes
-const VirtualDesktopTable = <T extends TableItem>({
-  items,
-  config,
-}: {
-  items: T[];
-  config: TableConfig<T>;
-}) => {
-  const { theme, columns, actions } = config;
-  const height = config.virtualization?.height ?? 480;
-  const rowHeight = config.virtualization?.rowHeight ?? 64;
-
-  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const item = items[index];
-    return (
-      <div style={style} className={`hover:bg-gradient-to-r hover:from-${theme.primaryColor}-50/50 hover:to-${theme.secondaryColor}-50/30 transition-all duration-300 cursor-pointer group`}
-        onClick={() => actions.onItemClick(item)}
-      >
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] items-stretch px-6" style={{ height: rowHeight }}>
-          {columns.map((column) => (
-            <div key={String(column.key)} className="flex items-center">
-              {column.render ? (
-                <div className="w-full">{column.render(item)}</div>
-              ) : (
-                <div className={`font-bold text-gray-900 group-hover:text-${theme.primaryColor}-700 transition-colors text-base truncate`}>
-                  {item[column.key] instanceof Date ? formatDate(item[column.key]) : (item[column.key] ? String(item[column.key]) : 'Sin datos')}
                 </div>
-              )}
-            </div>
-          ))}
-          <div className="flex items-center gap-2 justify-start">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`p-2.5 hover:bg-${theme.primaryColor}-50 hover:text-${theme.primaryColor}-600 transition-all duration-300 rounded-xl`}
-              onClick={(e) => { e.stopPropagation(); actions.onView(item); }}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-2.5 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 rounded-xl"
-              onClick={(e) => { e.stopPropagation(); actions.onEdit(item); }}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-2.5 hover:bg-red-50 hover:text-red-600 transition-all duration-300 rounded-xl"
-              onClick={(e) => { e.stopPropagation(); actions.onDelete(item); }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+              </div>
+            )
+          }}
+        </VirtualList>
       </div>
-    );
-  };
-
-  return (
-    <div className={`overflow-hidden rounded-3xl border border-${theme.borderColor} bg-gradient-to-br from-white via-${theme.primaryColor}-50/20 to-white shadow-2xl backdrop-blur-sm`}>
-      {/* Encabezado */}
-      <div className={`hidden xl:block bg-gradient-to-r from-${theme.primaryColor}-50/80 via-${theme.secondaryColor}-50/60 to-${theme.primaryColor}-50/80`}> 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-0 px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-          {columns.map((column) => (
-            <div key={String(column.key)} className="flex items-center gap-2">
-              {column.icon}
-              {column.label}
-            </div>
-          ))}
-          <div className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Acciones
-          </div>
-        </div>
-      </div>
-      {/* Lista virtualizada */}
-      <VirtualList
-        height={height}
-        width={"100%"}
-        itemCount={items.length}
-        itemSize={rowHeight}
-      >
-        {Row}
-      </VirtualList>
     </div>
-  );
+  )
 };
 
 // Componente principal genérico
 export const GenericTable = <T extends TableItem>({ 
   items, 
   loading, 
-  config 
+  config,
+  virtualizeTableThreshold,
+  virtualListHeight,
+  virtualRowHeight,
 }: GenericTableProps<T>) => {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const { theme, texts } = config;
+  const shouldVirtualize = useMemo(() => !!(virtualizeTableThreshold && items.length >= virtualizeTableThreshold), [items.length, virtualizeTableThreshold])
 
   if (loading) {
     return (
@@ -707,11 +704,15 @@ export const GenericTable = <T extends TableItem>({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.4 }}
-            className="hidden xl:block"
+            className="block"
           >
-            {config.virtualization?.enabled && items.length > (config.virtualization.threshold ?? 1500)
-              ? <VirtualDesktopTable items={items} config={config} />
-              : <DesktopTable items={items} config={config} />}
+            <DesktopTable 
+              items={items} 
+              config={config} 
+              virtualize={shouldVirtualize}
+              virtualListHeight={virtualListHeight}
+              virtualRowHeight={virtualRowHeight}
+            />
           </motion.div>
         ) : (
           <motion.div

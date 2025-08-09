@@ -65,7 +65,7 @@ export class HttpClient {
       const res = await withTimeout(fetch(this.baseUrl + path, {
         method,
         headers: finalHeaders,
-        body: body === undefined ? undefined : (isJson ? JSON.stringify(body) : (body as any)),
+        body: body === undefined ? undefined : (isJson ? JSON.stringify(body) : (body as unknown as BodyInit)),
         signal,
       }), timeoutMs, signal)
 
@@ -97,9 +97,7 @@ export class HttpClient {
   // Streaming de NDJSON (línea por línea) o texto chunked
   async stream<TChunk = unknown, TBody = unknown>(path: string, options: HttpRequestOptions<TBody> & { onMessage: (chunk: TChunk) => void }): Promise<void> {
     const { onMessage, ...rest } = options
-    const res = await this.request<Response>(path, { ...rest, // request devolverá data como texto/json, necesitamos fetch crudo
-      // Hack: solicitamos Response real re-ejecutando fetch sin parse
-    } as any)
+    const res = await this.request<Response>(path, { ...rest } as HttpRequestOptions<TBody>)
     // Si viene como texto completo, intentar parsear como NDJSON
     const data = res.data as unknown
     if (typeof data === 'string') {
