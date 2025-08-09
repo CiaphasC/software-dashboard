@@ -6,6 +6,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuthStore, useUsersStore } from '@/shared/store';
+import { selectUsers, selectUsersLoading } from '@/shared/store/selectors'
+import { shallow } from 'zustand/shallow'
 import { authService } from '@/shared/services/supabase';
 import { User, PendingUser } from '@/shared/types/common.types';
 import { useComponentRefresh } from '@/shared/hooks/useCentralizedRefresh.tsx';
@@ -20,15 +22,15 @@ export const useUsersPage = () => {
   // =============================================================================
 
   const { user: currentUser, updatePendingUsersCount } = useAuthStore();
-  const { 
-    users, 
-    loading, 
-    error, 
-    loadUsers, 
-    createUser, 
-    updateUser, 
-    deleteUser 
-  } = useUsersStore();
+  const users = useUsersStore(selectUsers)
+  const loading = useUsersStore(selectUsersLoading)
+  const { error, loadUsers, createUser, updateUser, deleteUser } = useUsersStore(s => ({
+    error: s.error,
+    loadUsers: s.loadUsers,
+    createUser: s.createUser,
+    updateUser: s.updateUser,
+    deleteUser: s.deleteUser,
+  }), shallow)
 
   // =============================================================================
   // LOCAL STATE - Estado local del componente
