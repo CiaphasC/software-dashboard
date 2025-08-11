@@ -4,30 +4,24 @@
 // =============================================================================
 
 import { supabase } from './client';
-import { HttpClient } from '@/shared/services/http/httpClient';
 import type {
-  GetIncidentsListRequest,
-  GetIncidentsListResponse,
-  IncidentMetricsRequest,
-  IncidentMetricsResponse,
-  GetRequirementsListRequest,
-  GetRequirementsListResponse,
-  RequirementMetricsResponse,
-  UsersListParams,
-  GetUsersListResponse,
-} from '@/shared/services/supabase/apiTypes'
-import {
-  GetIncidentsListResponseSchema,
-  IncidentMetricsResponseSchema,
-  GetRequirementsListResponseSchema,
-  GetUsersListResponseSchema,
-} from '@/shared/services/supabase/apiSchemas'
+  EdgeFnEnvelope,
+  EdgeUser,
+  ListUsersParams,
+  ListResult,
+  ListIncidentsParams,
+  IncidentMetrics,
+  ListRequirementsParams,
+  ItemDetails,
+  ItemDetailsRequest,
+  CatalogsData
+} from './functions.types'
 
 // =============================================================================
 // TYPES - Tipos para edge functions
 // =============================================================================
 
-export interface EdgeFunctionResponse<T> {
+export interface EdgeFunctionResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
@@ -77,47 +71,70 @@ export interface UpdateRequirementData {
 // =============================================================================
 
 export class EdgeFunctionsService {
-  private http: HttpClient
-  constructor() {
-    const base = (import.meta.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321') + '/functions/v1'
-    this.http = new HttpClient(base)
+  constructor() {}
+
+  // Helper genérico para llamar edge functions (usando supabase.functions.invoke)
+  private async callEdgeFunction<TData, TBody = unknown>(functionName: string, body: TBody): Promise<TData> {
+    const { data, error } = await supabase.functions.invoke<EdgeFnEnvelope<TData>>(functionName, { body: body as any })
+    if (error) throw new Error(error.message)
+    if (!data?.success) throw new Error(data?.error || `Error en ${functionName}`)
+    return data.data as TData
   }
 
-  // Helper para obtener el token de autenticación
-  private async getAuthToken(): Promise<string> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      throw new Error('No hay sesión activa');
+  // =============================================
+  // Helper HTTP para Hono router con subrutas
+  // =============================================
+  private async functionsFetch<T = any>(path: string, init?: RequestInit): Promise<T> {
+    const baseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string
+    if (!baseUrl) throw new Error('VITE_SUPABASE_URL no configurada')
+    const url = `${baseUrl.replace(/\/$/, '')}/functions/v1/incidents-ts${path}`
+    const { data: sessionData } = await supabase.auth.getSession()
+    const accessToken = sessionData.session?.access_token
+    const anonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY as string
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(anonKey ? { apikey: anonKey } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(init?.headers as Record<string, string> || {}),
     }
-    return session.access_token;
+    const res = await fetch(url, { ...init, headers })
+    const isJson = res.headers.get('content-type')?.includes('application/json')
+    const payload = isJson ? await res.json() : await res.text()
+    if (!res.ok) {
+      const detail = isJson ? (payload?.detail || payload?.error || JSON.stringify(payload)) : payload
+      throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail))
+    }
+    return payload as T
   }
 
-  // Helper genérico para llamar edge functions
-  private async callEdgeFunction<TResponse>(functionName: string, data: unknown): Promise<TResponse> {
-      const token = await this.getAuthToken();
-    const res = await this.http.request<EdgeFunctionResponse<TResponse>>(`/${functionName}`, {
-        method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: data,
-      timeoutMs: 30000,
-      retries: 2,
-      retryDelayMs: 300,
-    })
-    if (!res.ok) throw new Error(res.data?.error || `Error en ${functionName}`)
-    if (!res.data?.success) throw new Error(res.data?.error || `Error en ${functionName}`)
-    return res.data.data as TResponse
+  // Helper HTTP para users-ts
+  private async usersFetch<T = any>(path: string, init?: RequestInit): Promise<T> {
+    const baseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string
+    if (!baseUrl) throw new Error('VITE_SUPABASE_URL no configurada')
+    const url = `${baseUrl.replace(/\/$/, '')}/functions/v1/users-ts${path}`
+    const { data: sessionData } = await supabase.auth.getSession()
+    const accessToken = sessionData.session?.access_token
+    const anonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY as string
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(anonKey ? { apikey: anonKey } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(init?.headers as Record<string, string> || {}),
+    }
+    const res = await fetch(url, { ...init, headers })
+    const isJson = res.headers.get('content-type')?.includes('application/json')
+    const payload = isJson ? await res.json() : await res.text()
+    if (!res.ok) {
+      const detail = isJson ? (payload?.detail || payload?.error || JSON.stringify(payload)) : payload
+      throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail))
+    }
+    return payload as T
   }
 
   // Streaming NDJSON de Edge Function
-  async streamFunction<TChunk>(functionName: string, data: unknown, onMessage: (chunk: TChunk) => void): Promise<void> {
-    const token = await this.getAuthToken();
-    await this.http.stream<TChunk>(`/${functionName}`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: data,
-      onMessage,
-      timeoutMs: 60000,
-    })
+  async streamFunction<T = any>(_functionName: string, _data: any, _onMessage: (chunk: T) => void): Promise<void> {
+    // Opcional: implementar si usamos streaming; por ahora, no se usa
+    throw new Error('streamFunction no implementado con functions.invoke')
   }
 
   // =============================================================================
@@ -128,45 +145,65 @@ export class EdgeFunctionsService {
    * Crear nueva incidencia
    */
   async createIncident(data: CreateIncidentData): Promise<any> {
-    return this.callEdgeFunction('create-incident-ts', { incidentData: data });
+    const body = {
+      title: data.title,
+      description: data.description,
+      type: data.type,
+      priority: data.priority,
+      departmentId: Number(data.affected_area_id),
+      assignedTo: data.assigned_to ?? undefined,
+    }
+    return this.functionsFetch('', { method: 'POST', body: JSON.stringify(body) })
   }
 
   /**
    * Actualizar incidencia
    */
   async updateIncident(incidentId: string, data: UpdateIncidentData): Promise<any> {
-    return this.callEdgeFunction('update-incident-ts', { 
-      incidentId, 
-      incidentData: data 
-    });
+    const body: Record<string, unknown> = {}
+    if (data.title !== undefined) body.title = data.title
+    if (data.description !== undefined) body.description = data.description
+    if (data.type !== undefined) body.type = data.type
+    if (data.priority !== undefined) body.priority = data.priority
+    if (data.assigned_to !== undefined) body.assignedTo = data.assigned_to
+    if (data.affected_area_id !== undefined) body.departmentId = Number(data.affected_area_id)
+    // status no se actualiza por este endpoint
+    return this.functionsFetch(`/${encodeURIComponent(incidentId)}`, { method: 'PATCH', body: JSON.stringify(body) })
   }
 
   /**
    * Actualizar estado de incidencia
    */
-  async updateIncidentStatus(incidentId: string, status: string, resolvedAt?: string): Promise<any> {
-    return this.callEdgeFunction('update-incident-status-ts', { 
-      incidentId, 
-      newStatus: status, 
-      resolvedAt 
-    });
+  async updateIncidentStatus(incidentId: string, status: string, _resolvedAt?: string): Promise<any> {
+    return this.functionsFetch(`/${encodeURIComponent(incidentId)}/status`, { method: 'POST', body: JSON.stringify({ status }) })
   }
 
   // Lista paginada de incidencias mediante Edge Function
-  async listIncidents(params: GetIncidentsListRequest['params']): Promise<GetIncidentsListResponse> {
-    const data = await this.callEdgeFunction<GetIncidentsListResponse>('get-incident-ts', { action: 'list', params } as GetIncidentsListRequest)
-    // Validación runtime de respuesta
-    const parsed = GetIncidentsListResponseSchema.safeParse(data)
-    if (!parsed.success) throw new Error('Respuesta inválida de get-incident-ts:list')
-    return parsed.data
+  async listIncidents(params: ListIncidentsParams): Promise<ListResult<Record<string, unknown>>> {
+    const q = new URLSearchParams()
+    if (params.page) q.set('page', String(params.page))
+    if (params.limit) q.set('limit', String(params.limit))
+    if (params.search) q.set('search', params.search)
+    const filters = (params.filters || {}) as Record<string, unknown>
+    for (const [k, v] of Object.entries(filters)) {
+      if (v !== undefined && v !== null && v !== '') q.set(k, String(v))
+    }
+    const qs = q.toString()
+    const path = qs ? `?${qs}` : ''
+    return this.functionsFetch(path, { method: 'GET' })
   }
 
   // Métricas de incidencias mediante Edge Function
-  async getIncidentMetrics(): Promise<IncidentMetricsResponse> {
-    const data = await this.callEdgeFunction<IncidentMetricsResponse>('get-incident-ts', { action: 'metrics' } as IncidentMetricsRequest)
-    const parsed = IncidentMetricsResponseSchema.safeParse(data)
-    if (!parsed.success) throw new Error('Respuesta inválida de get-incident-ts:metrics')
-    return parsed.data
+  async getIncidentMetrics(): Promise<IncidentMetrics> {
+    return this.functionsFetch('/metrics/summary', { method: 'GET' })
+  }
+
+  async getIncident(id: string): Promise<Record<string, unknown>> {
+    return this.functionsFetch(`/${encodeURIComponent(id)}`, { method: 'GET' })
+  }
+
+  async deleteIncident(id: string): Promise<void> {
+    await this.functionsFetch(`/${encodeURIComponent(id)}`, { method: 'DELETE' })
   }
 
   // =============================================================================
@@ -201,47 +238,24 @@ export class EdgeFunctionsService {
     });
   }
 
-  // Lista de requerimientos (Edge Function si existe, sino fallback a vista)
-  async listRequirements(params: GetRequirementsListRequest['params']): Promise<GetRequirementsListResponse> {
-    try {
-      const data = await this.callEdgeFunction<GetRequirementsListResponse>('get-requirement-ts', { action: 'list', params } as GetRequirementsListRequest);
-      const parsed = GetRequirementsListResponseSchema.safeParse(data)
-      if (!parsed.success) throw new Error('Respuesta inválida de get-requirement-ts:list')
-      return parsed.data
-    } catch {
-      // Fallback directo a Supabase
-      if (!import.meta.env.DEV) throw new Error('EdgeFunction get-requirement-ts no disponible')
-      const page = params.page ?? 1; const limit = params.limit ?? 10; const offset = (page - 1) * limit;
-      let query = supabase.from('requirements_with_times').select('*', { count: 'exact' });
-      const f = params.filters || {};
-      if (f.status) query = query.eq('status', f.status);
-      if (f.priority) query = query.eq('priority', f.priority);
-      if (f.type) query = query.eq('type', f.type);
-      if (f.assignedTo) query = query.eq('assigned_to', f.assignedTo);
-      if (f.createdBy) query = query.eq('created_by', f.createdBy);
-      if (f.department) query = query.eq('requesting_area_name', f.department);
-      if (f.dateFrom) query = query.gte('created_at', f.dateFrom);
-      if (f.dateTo) query = query.lte('created_at', f.dateTo);
-      if (params.search) query = query.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%`);
-      query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
-      const { data, count, error } = await query;
-      if (error) throw error;
-      const total = count || 0; const hasMore = page * limit < total;
-      return { items: (data || []) as GetRequirementsListResponse['items'], total, page, limit, hasMore };
-    }
+  // Lista de requerimientos (solo Edge Function)
+  async listRequirements(params: ListRequirementsParams): Promise<ListResult<Record<string, unknown>>> {
+    const data = await this.callEdgeFunction<ListResult<Record<string, unknown>>, { action: 'list'; params: ListRequirementsParams }>('get-requirement-ts', { action: 'list', params })
+    return data
   }
 
-  async getRequirement(id: string): Promise<unknown | null> {
-    const { data } = await supabase.from('requirements_with_times').select('*').eq('id', id).single();
-    return data ?? null;
+  // Detalles de item (incidente o requerimiento)
+  async getItemDetails(itemType: 'incident' | 'requirement', itemId: string): Promise<ItemDetails | null> {
+    const data = await this.callEdgeFunction<ItemDetails, ItemDetailsRequest>('get-item-details-ts', { item_type: itemType, item_id: itemId })
+    return data
   }
 
-  async deleteRequirement(id: string): Promise<void> {
-    const { error } = await supabase.from('requirements').delete().eq('id', id);
-    if (error) throw error;
+  // Eliminación de requerimientos: requeriría Edge Function dedicada (no implementada aquí)
+  async deleteRequirement(_id: string): Promise<void> {
+    throw new Error('deleteRequirement no implementado; use Edge Function dedicada')
   }
 
-  async getRequirementMetrics(): Promise<RequirementMetricsResponse> {
+  async getRequirementMetrics(): Promise<{ totalRequirements: number; pendingRequirements: number; inProgressRequirements: number; completedRequirements: number; deliveredRequirements: number; }> {
     const [totalRes, pendingRes, inProgRes, completedRes, deliveredRes] = await Promise.all([
       supabase.from('requirements').select('*', { count: 'exact', head: true }),
       supabase.from('requirements').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
@@ -265,75 +279,84 @@ export class EdgeFunctionsService {
   /**
    * Llamar cualquier edge function genérico
    */
-  async callGenericFunction<TResponse>(functionName: string, data: unknown): Promise<TResponse> {
-    return this.callEdgeFunction<TResponse>(functionName, data);
+  async callGenericFunction<T = any>(functionName: string, data: any): Promise<T> {
+    return this.callEdgeFunction<T>(functionName, data);
   }
 
   /**
    * Obtener permisos de renderizado (genérico)
    */
-  async getRenderPermissions(itemType: 'incident' | 'requirement', itemId?: string): Promise<unknown> {
-    const functionName = itemType === 'incident' ? 'update-incident-ts' : 'update-requirement-ts';
-    return this.callEdgeFunction(functionName, {
-      [`${itemType}_id`]: itemId,
-      action: 'get_permissions'
-    });
+  async getRenderPermissions(itemType: 'incident' | 'requirement', itemId?: string): Promise<any> {
+    if (itemType === 'incident') {
+      const path = itemId ? `/${encodeURIComponent(itemId)}/permissions` : '/permissions'
+      return this.functionsFetch(path, { method: 'GET' })
+    }
+    const functionName = 'update-requirement-ts'
+    return this.callEdgeFunction(functionName, { [`${itemType}_id`]: itemId, action: 'get_permissions' })
   }
 
   /**
    * USERS - Métodos estandarizados
    */
-  async listUsers(params?: UsersListParams): Promise<{ items: unknown[]; total: number; page: number; limit: number; hasMore: boolean; }> {
-    const page = params?.page ?? 1; const limit = params?.limit ?? 20;
-    try {
-      const all = await this.callEdgeFunction<GetUsersListResponse>('get-users-ts', { search: params?.search, role: params?.role });
-      const parsed = GetUsersListResponseSchema.safeParse(all)
-      if (!parsed.success) throw new Error('Respuesta inválida de get-users-ts')
-      const total = parsed.data.length; const start = (page - 1) * limit; const items = parsed.data.slice(start, start + limit); const hasMore = page * limit < total;
-      return { items, total, page, limit, hasMore };
-    } catch {
-      // Fallback directo a perfiles
-      if (!import.meta.env.DEV) throw new Error('EdgeFunction get-users-ts no disponible')
-      let query = supabase.from('profiles').select('id, name, email, role_name, department_id, is_active').eq('is_active', true)
-      if (params?.role) query = query.eq('role_name', params.role)
-      if (params?.search) {
-        const s = params.search
-        query = query.or(`name.ilike.%${s}%,email.ilike.%${s}%`)
-      }
-      const offset = (page - 1) * limit
-      const { data, count, error } = await query.order('name').range(offset, offset + limit - 1)
-      if (error) throw error
-      const total = count || 0
-      const hasMore = page * limit < total
-      return { items: data || [], total, page, limit, hasMore }
-    }
+  async listUsers(params?: ListUsersParams): Promise<ListResult<EdgeUser>> {
+    const q = new URLSearchParams()
+    if (params?.page) q.set('page', String(params.page))
+    if (params?.limit) q.set('limit', String(params.limit))
+    if (params?.search) q.set('search', params.search)
+    if (params?.role) q.set('role', params.role)
+    const qs = q.toString()
+    const path = qs ? `?${qs}` : ''
+    return this.usersFetch<ListResult<EdgeUser>>(path, { method: 'GET' })
   }
 
-  async getUser(id: string): Promise<unknown | null> {
-    const { data } = await supabase.from('profiles').select('id, name, email, role_name, department_id, is_active').eq('id', id).single();
-    return data ?? null;
+  async getUser(userId: string): Promise<EdgeUser | null> {
+    return this.usersFetch<EdgeUser>(`/${encodeURIComponent(userId)}`, { method: 'GET' })
   }
 
-  async updateUser(id: string, updates: Partial<{ name: string; role_name: string; department_id: number; is_active: boolean }>): Promise<unknown> {
-    const { data, error } = await supabase.from('profiles').update(updates).eq('id', id).select().single();
-    if (error) throw error; return data;
+  async updateUser(userId: string, updates: Partial<{ name: string; email: string; role: string; department: string; isActive: boolean; password: string }>): Promise<{ success: boolean; user: any }> {
+    return this.usersFetch<{ success: boolean; user: any }>(`/${encodeURIComponent(userId)}`, { method: 'PATCH', body: JSON.stringify(updates) })
   }
 
-  async deleteUser(id: string): Promise<void> {
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
-    if (error) throw error;
+  async deleteUser(userId: string): Promise<void> {
+    await this.usersFetch<void>(`/${encodeURIComponent(userId)}`, { method: 'DELETE' })
+  }
+
+  async createUser(payload: { name: string; email: string; password: string; role: string; department: string; isActive?: boolean }): Promise<{ success: boolean; user: { id: string } }> {
+    return this.usersFetch<{ success: boolean; user: { id: string } }>(``, { method: 'POST', body: JSON.stringify(payload) })
+  }
+
+  async registerUser(payload: { name: string; email: string; password: string; department: string; requestedRole: string }): Promise<{ success: boolean; message: string }> {
+    return this.usersFetch<{ success: boolean; message: string }>(`/register`, { method: 'POST', body: JSON.stringify(payload) })
   }
 
   async getUserMetrics(): Promise<{ totalUsers: number; activeUsers: number; inactiveUsers: number; admins: number; technicians: number; requesters: number; }> {
-    const [totalRes, activeRes, adminsRes, techRes, reqRes] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact', head: true }),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role_name', 'admin'),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role_name', 'technician'),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role_name', 'requester'),
+    // No tocar la BD desde el cliente; calcular en cliente con datos disponibles si es necesario
+    throw new Error('getUserMetrics no implementado en Edge; calcule métricas en cliente')
+  }
+
+  // Catálogos (departamentos y roles)
+  async getCatalogs(): Promise<CatalogsData> {
+    // Usar get-catalogs-ts con rutas REST para ambos catálogos
+    const baseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string
+    const { data: sessionData } = await supabase.auth.getSession()
+    const accessToken = sessionData.session?.access_token
+    const anonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY as string
+    const commonHeaders = { 'Content-Type': 'application/json', apikey: anonKey, ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) }
+
+    const depUrl = `${baseUrl.replace(/\/$/, '')}/functions/v1/get-catalogs-ts/departments`
+    const rolesUrl = `${baseUrl.replace(/\/$/, '')}/functions/v1/get-catalogs-ts/roles`
+
+    const [depRes, rolesRes] = await Promise.all([
+      fetch(depUrl, { headers: commonHeaders }),
+      fetch(rolesUrl, { headers: commonHeaders })
     ])
-    const totalUsers = totalRes.count || 0; const activeUsers = activeRes.count || 0; const inactiveUsers = totalUsers - activeUsers;
-    return { totalUsers, activeUsers, inactiveUsers, admins: adminsRes.count || 0, technicians: techRes.count || 0, requesters: reqRes.count || 0 }
+
+    const depJson = await depRes.json()
+    const rolesJson = await rolesRes.json()
+    if (!depRes.ok) throw new Error(depJson?.error || 'Error cargando departamentos')
+    if (!rolesRes.ok) throw new Error(rolesJson?.error || 'Error cargando roles')
+
+    return { departments: depJson.departments ?? [], roles: rolesJson.roles ?? [] }
   }
 }
 

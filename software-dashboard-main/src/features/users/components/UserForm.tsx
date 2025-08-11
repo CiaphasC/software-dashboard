@@ -3,14 +3,19 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
+  User, 
+  Mail, 
+  Shield, 
+  MapPin, 
+  X,
+  Save,
   UserPlus,
+  Lock,
   Eye,
   EyeOff,
-  AlertCircle,
-  X,
-  Shield
+  AlertCircle
 } from 'lucide-react';
-// Removed unused Card components
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Select } from '@/shared/components/ui/Select';
@@ -18,12 +23,12 @@ import { UserRole } from '@/shared/types/common.types';
 import { userFormSchema, type UserFormData, type UserFormProps } from '@/features/users/types';
 import { dataService } from '@/shared/services/supabase';
 import { createPortal } from 'react-dom';
-import { logger } from '@/shared/utils/logger'
 
 // Opciones por defecto (fallback)
 const defaultRoleOptions = [
   { value: UserRole.ADMIN, label: 'Administrador' },
-  { value: UserRole.TECHNICIAN, label: 'Técnico' }
+  { value: UserRole.TECHNICIAN, label: 'Técnico' },
+  { value: UserRole.REQUESTER, label: 'Solicitante' },
 ];
 
 const defaultDepartmentOptions = [
@@ -51,9 +56,6 @@ export const UserForm: React.FC<UserFormProps> = ({
   const [dynamicDepartments, setDynamicDepartments] = useState(departments);
   const [isLoadingCatalogs, setIsLoadingCatalogs] = useState(false);
   
-  type AdminRole = Exclude<UserRole, UserRole.REQUESTER>;
-  type FormValues = Omit<UserFormData, 'role'> & { role: AdminRole };
-
   const {
     register,
     handleSubmit,
@@ -61,12 +63,12 @@ export const UserForm: React.FC<UserFormProps> = ({
     reset,
     watch,
     setValue
-  } = useForm<FormValues>({
+  } = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
     defaultValues: user ? {
       name: user.name || '',
       email: user.email || '',
-      role: (user.role !== UserRole.REQUESTER ? (user.role as AdminRole) : UserRole.TECHNICIAN),
+      role: (user.role as UserRole) || UserRole.TECHNICIAN,
       department: user.department || '',
       isActive: user.isActive ?? true,
       isEmailVerified: user.isEmailVerified ?? false,
@@ -104,15 +106,13 @@ export const UserForm: React.FC<UserFormProps> = ({
 
       // Cargar roles desde la BD
       const rolesData = await dataService.getRoles();
-      const roleOptions = rolesData
-        .filter(role => role.name !== 'requester')
-        .map(role => ({
-          value: role.name as UserRole,
-          label: role.description || role.name
-        }));
+      const roleOptions = rolesData.map(role => ({
+        value: role.name as UserRole,
+        label: role.description || role.name
+      }));
       setDynamicRoles(roleOptions);
     } catch (error) {
-      logger.error('UserForm: Error cargando catálogos', error as Error);
+      console.error('Error cargando catálogos:', error);
       // Usar opciones por defecto si falla la carga
       setDynamicDepartments(defaultDepartmentOptions);
       setDynamicRoles(defaultRoleOptions);
@@ -125,7 +125,7 @@ export const UserForm: React.FC<UserFormProps> = ({
     if (user) {
       setValue('name', user.name || '');
       setValue('email', user.email || '');
-      setValue('role', (user.role !== UserRole.REQUESTER ? (user.role as AdminRole) : UserRole.TECHNICIAN));
+      setValue('role', user.role || UserRole.TECHNICIAN);
       setValue('department', user.department || '');
       setValue('isActive', user.isActive ?? true);
       setValue('isEmailVerified', user.isEmailVerified ?? false);
@@ -142,6 +142,7 @@ export const UserForm: React.FC<UserFormProps> = ({
   }, [user, setValue, reset]);
 
   const watchedRole = watch('role');
+  const watchedPassword = watch('password');
 
   const getRoleColor = (role: UserRole) => {
     switch (role) {
@@ -156,7 +157,7 @@ export const UserForm: React.FC<UserFormProps> = ({
     }
   };
 
-  const handleFormSubmit = async (data: FormValues) => {
+  const handleFormSubmit = async (data: UserFormData) => {
     try {
       // Preparar los datos para enviar
       const userData = {
@@ -174,7 +175,7 @@ export const UserForm: React.FC<UserFormProps> = ({
       await onSubmit(userData);
       reset();
     } catch (error) {
-      logger.error('UserForm: Error submitting form', error as Error);
+      console.error('Error submitting form:', error);
     }
   };
 
@@ -406,7 +407,6 @@ export const UserForm: React.FC<UserFormProps> = ({
                   <Select
                     {...register('role')}
                     options={dynamicRoles}
-                    loading={isLoadingCatalogs}
                     className={`w-full px-3 py-3 bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/60 transition-all duration-300 hover:bg-white/90 hover:border-blue-300/40 ${errors.role ? 'border-red-300/60 focus:border-red-500/60 focus:ring-red-500/30' : ''}`}
                   />
                   {errors.role && (
@@ -429,7 +429,6 @@ export const UserForm: React.FC<UserFormProps> = ({
                   <Select
                     {...register('department')}
                     options={dynamicDepartments}
-                    loading={isLoadingCatalogs}
                     className={`w-full px-3 py-3 bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/60 transition-all duration-300 hover:bg-white/90 hover:border-blue-300/40 ${errors.department ? 'border-red-300/60 focus:border-red-500/60 focus:ring-red-500/30' : ''}`}
                   />
                   {errors.department && (

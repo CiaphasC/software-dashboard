@@ -27,16 +27,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Prefetch on mount (idle): bundles y primera página de incidencias
   useEffect(() => {
     const cb = () => {
-      const isDev = import.meta.env.DEV;
-      // Prefetch de bundles principales (silenciar errores intermitentes de Vite)
-      void import('@/features/dashboard/pages/Dashboard').catch(() => undefined);
-      void import('@/features/incidents/pages/IncidentsPage').catch(() => undefined);
-      void import('@/features/requirements/pages/RequirementsPage').catch(() => undefined);
-      // En desarrollo evitamos prefetch de módulos más pesados/volátiles para no disparar 500 de Vite
-      if (!isDev) {
-        void import('@/features/users/pages/UsersPage').catch(() => undefined);
-        void import('@/features/reports/pages/ReportsPage').catch(() => undefined);
-      }
+      // Prefetch de bundles principales
+      import('@/features/dashboard/pages/Dashboard');
+      import('@/features/incidents/pages/IncidentsPage');
+      import('@/features/requirements/pages/RequirementsPage');
+      import('@/features/users/pages/UsersPage');
       // Prefetch de datos primera página + métricas
       try {
         prefetchManager.prefetch('incidents:firstPage');
@@ -45,10 +40,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         prefetchManager.prefetch('requirements:metrics');
         prefetchManager.prefetch('users:firstPage');
         prefetchManager.prefetch('users:metrics');
-        if (!isDev) {
-          prefetchManager.prefetch('reports:bundle');
-          prefetchManager.prefetch('reports:initialData');
-        }
       } catch {}
     };
     if ('requestIdleCallback' in window) {
@@ -100,9 +91,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Page content */}
         <main className="min-h-screen bg-gray-50">
           <div className="p-4 xl:p-6">
-            <div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               {children}
-            </div>
+            </motion.div>
           </div>
         </main>
       </div>

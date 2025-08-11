@@ -3,12 +3,14 @@
 // Autenticación con Supabase Auth
 // =============================================================================
 
-import { supabase } from './client'
+import { supabase, supabaseAdmin } from './client'
 import { logger } from '@/shared/utils/logger'
 import type { 
   Profile, 
+  RegistrationRequest, 
   ProfileWithRole,
   RegistrationRequestWithAdmin,
+  Inserts,
   Updates 
 } from './types'
 
@@ -66,11 +68,6 @@ export interface UpdateUserData {
 // =============================================================================
 
 export class AuthService {
-  private async getFunctionsClient() {
-    const { HttpClient } = await import('@/shared/services/http/httpClient');
-    const base = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '') + '/functions/v1';
-    return new HttpClient(base);
-  }
   // =============================================================================
   // AUTHENTICATION METHODS - Métodos de autenticación
   // =============================================================================
@@ -120,25 +117,15 @@ export class AuthService {
   async register(userData: RegisterData): Promise<void> {
     try {
       // ✅ USAR EDGE FUNCTION PARA REGISTRO PÚBLICO
-      const { data, error } = await supabase.functions.invoke('register-user-ts', {
-        body: {
-          name: userData.name,
-          email: userData.email,
-          password: userData.password,
-          department: userData.department,
-          requestedRole: userData.requestedRole
-        }
-      });
+      const { success, message } = await (await import('./edgeFunctionsService')).edgeFunctionsService.registerUser({
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        department: userData.department,
+        requestedRole: userData.requestedRole
+      })
 
-      if (error) {
-        throw new Error(`Error en Edge Function: ${error.message}`);
-      }
-
-      if (!data?.success) {
-        throw new Error(data?.error || 'Error desconocido en el registro');
-      }
-
-      logger.info(`✅ Registro exitoso via Edge Function: ${data.message}`)
+      logger.info(`✅ Registro exitoso via Edge Function: ${message}`)
     } catch (error) {
       logger.error('❌ Error en registro:', (error as Error).message)
       throw error;
@@ -296,24 +283,15 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
-      const client = await this.getFunctionsClient();
-      const result = await client.request<{ success: boolean; user: { id: string } }>('/create-user-ts', {
-        method: 'POST',
-        body: {
-          name: userData.name,
-          email: userData.email,
-          password: userData.password,
-          role: userData.role,
-          department: userData.department,
-          isActive: userData.isActive ?? true
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY
-        }
-      });
-      if (!result.ok || !result.data?.success) throw new Error('Error creando usuario');
-      const profile = await this.getProfile(result.data.user.id);
+      const { user } = await (await import('./edgeFunctionsService')).edgeFunctionsService.createUser({
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        role: userData.role,
+        department: userData.department,
+        isActive: userData.isActive ?? true
+      })
+      const profile = await this.getProfile(user.id);
       if (!profile) throw new Error('Error obteniendo perfil del usuario creado');
       return profile;
     } catch (error) {
@@ -330,17 +308,8 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
-      const client = await this.getFunctionsClient();
-      const result = await client.request<{ success: boolean; user: Profile }>('/update-user-ts', {
-        method: 'POST',
-        body: { userId, updates },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY
-        }
-      });
-      if (!result.ok || !result.data?.success) throw new Error('Error actualizando usuario');
-      return result.data.user;
+      const { user } = await (await import('./edgeFunctionsService')).edgeFunctionsService.updateUser(userId, updates)
+      return user as unknown as Profile
     } catch (error) {
       logger.error('❌ Error actualizando usuario:', (error as Error).message)
       throw error;
@@ -355,16 +324,7 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No hay sesión activa');
 
-      const client = await this.getFunctionsClient();
-      const result = await client.request<{ success: boolean }>('/delete-user-ts', {
-        method: 'POST',
-        body: { userId },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY
-        }
-      });
-      if (!result.ok || !result.data?.success) throw new Error('Error eliminando usuario');
+      await (await import('./edgeFunctionsService')).edgeFunctionsService.deleteUser(userId)
     } catch (error) {
       logger.error('❌ Error eliminando usuario:', (error as Error).message)
       throw error;
@@ -447,42 +407,26 @@ export class AuthService {
         logger.info(`🔄 Usuario solicitante promovido automáticamente a técnico: ${request.name}`)
       }
 
-      // 🔑 CREAR USUARIO REAL VIA EDGE FUNCTION (usa Service Role en el servidor)
-      const client = await this.getFunctionsClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No hay sesión activa');
+      // 🔑 CREAR USUARIO REAL EN AUTH.USERS USANDO SUPABASE AUTH ADMIN API
+      if (!supabaseAdmin) {
+        throw new Error('Cliente admin de Supabase no configurado')
+      }
+      
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: request.email,
+        password: request.password,
+        email_confirm: true,
+        user_metadata: {
+          name: request.name
+        }
+      })
 
-      // Obtener short_name del departamento desde id de la solicitud
-      let deptShortName: string | null = null;
-      if (request.department_id) {
-        const { data: dept } = await supabase
-          .from('departments')
-          .select('short_name')
-          .eq('id', request.department_id)
-          .single();
-        deptShortName = dept?.short_name ?? null;
+      if (authError) {
+        throw new Error(`Error creando usuario: ${authError.message}`)
       }
 
-      const createRes = await client.request<{ success: boolean; user?: { id: string } }>('/create-user-ts', {
-        method: 'POST',
-        body: {
-          name: request.name,
-          email: request.email,
-          password: request.password,
-          role: finalRoleName,
-          // La Edge Function espera short_name del departamento
-          department: deptShortName ?? request.department_short_name ?? 'general',
-          isActive: true,
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        timeoutMs: 30000,
-      });
-
-      if (!createRes.ok || !createRes.data?.success || !createRes.data.user?.id) {
-        throw new Error('Error creando usuario (Edge Function)');
+      if (!authUser.user) {
+        throw new Error('No se pudo crear el usuario')
       }
 
       // Obtener el ID del rol final
@@ -506,7 +450,7 @@ export class AuthService {
           is_active: true,
           updated_at: new Date().toISOString()
         })
-        .eq('id', createRes.data.user.id)
+        .eq('id', authUser.user.id)
 
       if (profileError) {
         throw new Error(`Error actualizando perfil: ${profileError.message}`)
@@ -529,7 +473,7 @@ export class AuthService {
         : 'Tu solicitud de registro ha sido aprobada. Ya puedes iniciar sesión en el sistema.';
 
       await supabase.rpc('create_notification', {
-        p_user_id: createRes.data.user.id,
+        p_user_id: authUser.user.id,
         p_title: 'Cuenta Aprobada',
         p_message: notificationMessage,
         p_type: 'success',

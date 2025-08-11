@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { log, logger } from '@/shared/utils/logger';
+import { log } from '@/shared/utils/logger';
 import { useRequirementModal } from '@/features/requirements/hooks';
 import { useRequirementsStore } from '@/shared/store/requirementsStore';
 import { Requirement, RequirementType, RequirementStatus, Priority } from '@/shared/types/common.types';
@@ -65,7 +65,7 @@ export const useRequirementsPage = () => {
       await createRequirement(data);
       closeForm();
     } catch (error) {
-      logger.error('useRequirementsPage: Error creating requirement', error as Error);
+      console.error('Error creating requirement:', error);
     } finally {
       setIsSubmitting(false);
     }

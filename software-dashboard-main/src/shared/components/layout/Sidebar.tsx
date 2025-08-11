@@ -27,28 +27,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
   // Prefetch de bundles por ruta en hover
   const prefetchBundle = (path: string) => {
-    const isDev = import.meta.env.DEV;
     switch (path) {
       case '/dashboard':
-        void import('@/features/dashboard/pages/Dashboard').catch(()=>undefined);
+        import('@/features/dashboard/pages/Dashboard');
         break;
       case '/incidents':
-        void import('@/features/incidents/pages/IncidentsPage').catch(()=>undefined);
+        import('@/features/incidents/pages/IncidentsPage');
         break;
       case '/requirements':
-        void import('@/features/requirements/pages/RequirementsPage').catch(()=>undefined);
+        import('@/features/requirements/pages/RequirementsPage');
         break;
       case '/activities':
-        void import('@/features/activities/pages/ActivitiesPage').catch(()=>undefined);
+        import('@/features/activities/pages/ActivitiesPage');
         break;
       case '/reportes':
-        if (!isDev) void import('@/features/reports/pages/ReportsPage').catch(()=>undefined);
+        import('@/features/reports/pages/ReportsPage');
         break;
       case '/usuarios':
-        if (!isDev) void import('@/features/users/pages/UsersPage').catch(()=>undefined);
+        import('@/features/users/pages/UsersPage');
         break;
       case '/configuracion':
-        void import('@/features/settings/pages/SettingsPage').catch(()=>undefined);
+        import('@/features/settings/pages/SettingsPage');
         break;
     }
   }

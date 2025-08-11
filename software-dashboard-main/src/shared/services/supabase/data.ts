@@ -107,19 +107,10 @@ export class DataService {
    */
   async getIncident(id: string): Promise<IncidentWithTimes | null> {
     try {
-      const { data, error } = await supabase
-        .from('incidents_with_times')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      return data
+      const data = await edgeFunctionsService.getIncident(id)
+      return (data || null) as IncidentWithTimes | null
     } catch (error) {
-      logger.error('❌ Error obteniendo incidencia:', (error as Error).message)
+      logger.error('❌ Error obteniendo incidencia (edge):', (error as Error).message)
       return null
     }
   }
@@ -201,60 +192,15 @@ export class DataService {
     error?: string
   }> {
     try {
-      let query = supabase
-        .from('requirements_with_times')
-        .select('*', { count: 'exact' })
-
-      // Aplicar filtros
-      if (params?.filters) {
-        const filters = params.filters
-        if (filters.status) query = query.eq('status', filters.status)
-        if (filters.priority) query = query.eq('priority', filters.priority)
-        if (filters.type) query = query.eq('type', filters.type)
-        if (filters.assignedTo) query = query.eq('assigned_to', filters.assignedTo)
-        if (filters.createdBy) query = query.eq('created_by', filters.createdBy)
-        if (filters.department) query = query.eq('requesting_area_name', filters.department)
-        if (filters.dateFrom) query = query.gte('created_at', filters.dateFrom)
-        if (filters.dateTo) query = query.lte('created_at', filters.dateTo)
-      }
-
-      // Aplicar búsqueda
-      if (params?.search) {
-        query = query.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%`)
-      }
-
-      // Aplicar ordenamiento
-      if (params?.sort) {
-        query = query.order(params.sort.column, { 
-          ascending: params.sort.direction === 'asc' 
-        })
-      } else {
-        query = query.order('created_at', { ascending: false })
-      }
-
-      // Aplicar paginación
-      if (params?.page && params?.limit) {
-        const offset = (params.page - 1) * params.limit
-        query = query.range(offset, offset + params.limit - 1)
-      }
-
-      const { data, error, count } = await query
-
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      return {
-        data: data || [],
-        total: count || 0
-      }
+      const page = params?.page ?? 1
+      const limit = params?.limit ?? 10
+      const search = params?.search
+      const filters = params?.filters
+      const result = await edgeFunctionsService.listRequirements({ page, limit, search, filters })
+      return { data: (result.items || []) as RequirementWithUsers[], total: result.total || 0 }
     } catch (error) {
-logger.error('❌ Error obteniendo requerimientos:', error)
-      return {
-        data: [],
-        total: 0,
-        error: error instanceof Error ? error.message : 'Error desconocido'
-      }
+      console.error('❌ Error obteniendo requerimientos (edge):', error)
+      return { data: [], total: 0, error: error instanceof Error ? error.message : 'Error desconocido' }
     }
   }
 
@@ -263,19 +209,10 @@ logger.error('❌ Error obteniendo requerimientos:', error)
    */
   async getRequirement(id: string): Promise<RequirementWithUsers | null> {
     try {
-      const { data, error } = await supabase
-        .from('requirements_with_times')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      return data
+      const data = await edgeFunctionsService.getItemDetails('requirement', id)
+      return (data || null) as RequirementWithUsers | null
     } catch (error) {
-logger.error('❌ Error obteniendo requerimiento:', error)
+      console.error('❌ Error obteniendo requerimiento (edge):', error)
       return null
     }
   }
@@ -297,7 +234,7 @@ logger.error('❌ Error obteniendo requerimiento:', error)
 
       return data
     } catch (error) {
-logger.error('❌ Error creando requerimiento:', error)
+      console.error('❌ Error creando requerimiento:', error)
       throw error
     }
   }
@@ -320,7 +257,7 @@ logger.error('❌ Error creando requerimiento:', error)
 
       return data
     } catch (error) {
-logger.error('❌ Error actualizando requerimiento:', error)
+      console.error('❌ Error actualizando requerimiento:', error)
       throw error
     }
   }
@@ -339,7 +276,7 @@ logger.error('❌ Error actualizando requerimiento:', error)
         throw new Error(error.message)
       }
     } catch (error) {
-logger.error('❌ Error eliminando requerimiento:', error)
+      console.error('❌ Error eliminando requerimiento:', error)
       throw error
     }
   }
@@ -353,19 +290,10 @@ logger.error('❌ Error eliminando requerimiento:', error)
    */
   async getDepartments(): Promise<Department[]> {
     try {
-      const { data, error } = await supabase
-        .from('departments')
-        .select('*')
-        .eq('is_active', true)
-        .order('name')
-
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      return data || []
+      const { departments } = await edgeFunctionsService.getCatalogs()
+      return (departments || []) as Department[]
     } catch (error) {
-logger.error('❌ Error obteniendo departamentos:', error)
+      console.error('❌ Error obteniendo departamentos (edge):', error)
       throw error
     }
   }
@@ -375,23 +303,12 @@ logger.error('❌ Error obteniendo departamentos:', error)
    */
   async getRoles(): Promise<Array<{ id: number; name: string; description: string }>> {
     try {
-      // Simplificar la consulta para evitar problemas de stack depth
-      const { data, error } = await supabase
-        .from('roles')
-        .select('id, name, description')
-        .eq('is_active', true)
-
-      if (error) {
-logger.error('❌ Error en consulta de roles:', error)
-        throw new Error(error.message)
-      }
-
-      // Ordenar en el cliente para evitar problemas de SQL
-      const sortedData = (data || []).sort((a, b) => a.name.localeCompare(b.name))
-      
+      const { roles } = await edgeFunctionsService.getCatalogs()
+      const sortedData = (roles || []).map(r => ({ id: r.id, name: r.name, description: r.description }))
+        .sort((a, b) => a.name.localeCompare(b.name))
       return sortedData
     } catch (error) {
-logger.error('❌ Error obteniendo roles:', error)
+      console.error('❌ Error obteniendo roles (edge):', error)
       throw error
     }
   }
@@ -401,20 +318,10 @@ logger.error('❌ Error obteniendo roles:', error)
    */
   async getUsers(): Promise<Array<{ id: string; name: string; email: string; role_name: string }>> {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, name, email, role_name')
-        .eq('is_active', true)
-        .order('name')
-
-      if (error) {
-logger.error('❌ Error en consulta de usuarios:', error)
-        throw new Error(error.message)
-      }
-
-      return data || []
+      const { items } = await edgeFunctionsService.listUsers({ page: 1, limit: 10000 })
+      return (items || []).map((u: any) => ({ id: u.id, name: u.name, email: u.email, role_name: u.role_name }))
     } catch (error) {
-logger.error('❌ Error obteniendo usuarios:', error)
+      console.error('❌ Error obteniendo usuarios (edge):', error)
       throw error
     }
   }
@@ -440,7 +347,7 @@ logger.error('❌ Error obteniendo usuarios:', error)
 
       return data || []
     } catch (error) {
-logger.error('❌ Error obteniendo actividades:', error)
+      console.error('❌ Error obteniendo actividades:', error)
       throw error
     }
   }
@@ -462,7 +369,7 @@ logger.error('❌ Error obteniendo actividades:', error)
 
       return data
     } catch (error) {
-logger.error('❌ Error creando actividad:', error)
+      console.error('❌ Error creando actividad:', error)
       throw error
     }
   }
@@ -489,7 +396,7 @@ logger.error('❌ Error creando actividad:', error)
 
       return data || []
     } catch (error) {
-logger.error('❌ Error obteniendo notificaciones:', error)
+      console.error('❌ Error obteniendo notificaciones:', error)
       throw error
     }
   }
@@ -508,7 +415,7 @@ logger.error('❌ Error obteniendo notificaciones:', error)
         throw new Error(error.message)
       }
     } catch (error) {
-logger.error('❌ Error marcando notificación como leída:', error)
+      console.error('❌ Error marcando notificación como leída:', error)
       throw error
     }
   }
@@ -528,7 +435,7 @@ logger.error('❌ Error marcando notificación como leída:', error)
         throw new Error(error.message)
       }
     } catch (error) {
-logger.error('❌ Error marcando todas las notificaciones como leídas:', error)
+      console.error('❌ Error marcando todas las notificaciones como leídas:', error)
       throw error
     }
   }
@@ -550,7 +457,7 @@ logger.error('❌ Error marcando todas las notificaciones como leídas:', error)
 
       return count || 0
     } catch (error) {
-logger.error('❌ Error obteniendo conteo de notificaciones:', error)
+      console.error('❌ Error obteniendo conteo de notificaciones:', error)
       throw error
     }
   }
@@ -576,7 +483,7 @@ logger.error('❌ Error obteniendo conteo de notificaciones:', error)
 
       return data || []
     } catch (error) {
-logger.error('❌ Error obteniendo reportes:', error)
+      console.error('❌ Error obteniendo reportes:', error)
       throw error
     }
   }
@@ -598,7 +505,7 @@ logger.error('❌ Error obteniendo reportes:', error)
 
       return data
     } catch (error) {
-logger.error('❌ Error creando reporte:', error)
+      console.error('❌ Error creando reporte:', error)
       throw error
     }
   }
@@ -621,7 +528,7 @@ logger.error('❌ Error creando reporte:', error)
 
       return data
     } catch (error) {
-logger.error('❌ Error actualizando reporte:', error)
+      console.error('❌ Error actualizando reporte:', error)
       throw error
     }
   }
@@ -635,14 +542,6 @@ logger.error('❌ Error actualizando reporte:', error)
    */
   async getDashboardMetrics(): Promise<DashboardMetrics> {
     try {
-      // Cache simple en memoria para evitar repetir la RPC en ventanas cortas
-      const cacheKey = 'metrics:dashboard';
-      const cached = (globalThis as any).__metrics_cache__?.get(cacheKey);
-      const now = Date.now();
-      if (cached && now - cached.time < 30_000) {
-        return cached.value as DashboardMetrics;
-      }
-
       const { data, error } = await supabase.rpc('get_dashboard_metrics')
 
       if (error) {
@@ -669,7 +568,7 @@ logger.error('❌ Error actualizando reporte:', error)
 
       // Asegurar que todas las propiedades existan con valores por defecto
       const metrics = data as any
-      const value: DashboardMetrics = {
+      return {
         totalIncidents: metrics.totalIncidents || 0,
         openIncidents: metrics.openIncidents || 0,
         inProgressIncidents: metrics.inProgressIncidents || 0,
@@ -683,13 +582,8 @@ logger.error('❌ Error actualizando reporte:', error)
         averageResolutionTime: metrics.averageResolutionTime || 0,
         topDepartments: Array.isArray(metrics.topDepartments) ? metrics.topDepartments : []
       }
-
-      // set cache
-      const store = ((globalThis as any).__metrics_cache__ = (globalThis as any).__metrics_cache__ || new Map());
-      store.set(cacheKey, { value, time: now });
-      return value
     } catch (error) {
-logger.error('❌ Error obteniendo métricas del dashboard:', error)
+      console.error('❌ Error obteniendo métricas del dashboard:', error)
       
       // Devolver métricas por defecto en caso de error
       return {
@@ -738,7 +632,7 @@ logger.error('❌ Error obteniendo métricas del dashboard:', error)
 
       return data
     } catch (error) {
-logger.error('❌ Error creando notificación:', error)
+      console.error('❌ Error creando notificación:', error)
       throw error
     }
   }
@@ -770,7 +664,7 @@ logger.error('❌ Error creando notificación:', error)
 
       return data
     } catch (error) {
-logger.error('❌ Error registrando actividad:', error)
+      console.error('❌ Error registrando actividad:', error)
       throw error
     }
   }

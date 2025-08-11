@@ -333,16 +333,6 @@ s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
 
-[functions.hello-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/hello-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/hello-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/hello-ts/*.html" ]
 
 [functions.auth-webhook-ts]
 enabled = true
@@ -388,16 +378,6 @@ entrypoint = "./functions/send-notification-ts/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/send-notification-ts/*.html" ]
 
-[functions.update-incident-status-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/update-incident-status-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/update-incident-status-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/update-incident-status-ts/*.html" ]
 
 [functions.update-requirement-status-ts]
 enabled = true
@@ -434,7 +414,7 @@ entrypoint = "./functions/real-time-analytics-ts/index.ts"
 
 [functions.get-catalogs-ts]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/get-catalogs-ts/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -443,49 +423,6 @@ entrypoint = "./functions/get-catalogs-ts/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/get-catalogs-ts/*.html" ]
 
-[functions.create-user-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/create-user-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/create-user-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/create-user-ts/*.html" ]
-
-[functions.update-user-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/update-user-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/update-user-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/update-user-ts/*.html" ]
-
-[functions.delete-user-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/delete-user-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/delete-user-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/delete-user-ts/*.html" ]
-
-[functions.register-user-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/register-user-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/register-user-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/register-user-ts/*.html" ]
 
 [functions.create-admin-user-ts]
 enabled = true
@@ -498,60 +435,9 @@ entrypoint = "./functions/create-admin-user-ts/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/create-admin-user-ts/*.html" ]
 
-[functions.update-incident-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/update-incident-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/update-incident-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/update-incident-ts/*.html" ]
 
-[functions.create-incident-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/create-incident-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/create-incident-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/create-incident-ts/*.html" ]
 
-[functions.create-get-users-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/create-get-users-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/create-get-users-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/create-get-users-ts/*.html" ]
 
-[functions.get-users-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/get-users-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/get-users-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/get-users-ts/*.html" ]
-
-[functions.get-incident-ts]
-enabled = true
-verify_jwt = true
-import_map = "./functions/get-incident-ts/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/get-incident-ts/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/get-incident-ts/*.html" ]
 
 [functions.get-requirement-ts]
 enabled = true
@@ -563,3 +449,25 @@ entrypoint = "./functions/get-requirement-ts/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/get-requirement-ts/*.html" ]
+
+[functions.incidents-ts]
+enabled = true
+verify_jwt = true
+import_map = "./functions/incidents-ts/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/incidents-ts/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/incidents-ts/*.html" ]
+
+[functions.users-ts]
+enabled = true
+verify_jwt = true
+import_map = "./functions/users-ts/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/users-ts/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/users-ts/*.html" ]

@@ -256,12 +256,9 @@ export const IncidentsTable: React.FC<IncidentsTableProps> = ({
 
   return (
     <GenericTable
-      items={incidents}
+      items={incidents as any}
       loading={loading}
-      config={config}
-      virtualizeTableThreshold={50}
-      virtualListHeight={560}
-      virtualRowHeight={72}
+      config={config as any}
     />
   );
 }; 

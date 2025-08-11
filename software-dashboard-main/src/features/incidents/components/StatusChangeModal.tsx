@@ -27,7 +27,6 @@ import {
 } from '@/shared/components/ui';
 import { useAuthStore } from '@/shared/store';
 import { useFormatters } from '@/shared/utils/utils';
-import { logger } from '@/shared/utils/logger'
 
 // ============================================================================
 // SCHEMA & TYPES
@@ -153,7 +152,7 @@ export const StatusChangeModal: React.FC<StatusChangeModalProps> = ({
       reset();
       onClose();
     } catch (error) {
-      logger.error('StatusChangeModal: Error changing status', error as Error);
+      console.error('Error changing status:', error);
     }
   };
 

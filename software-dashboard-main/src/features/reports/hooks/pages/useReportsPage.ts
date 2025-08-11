@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react';
-import { logger } from '@/shared/utils/logger'
 import { useNavigate } from 'react-router-dom';
 import { reportService } from '@/features/reports/services/ReportService';
 import { useReportConfig, ReportConfig } from '@/features/reports/hooks/components/useReportConfig';
@@ -51,8 +50,8 @@ export const useReportsPage = (): UseReportsPageReturn => {
       setLoading(true);
       setError(null);
 
-      // Cargar datos en paralelo y sin duplicar trabajo si ya hay cache en stores
-      await Promise.allSettled([
+      // Cargar datos de incidencias y requerimientos usando los stores
+      await Promise.all([
         loadIncidents(),
         loadRequirements()
       ]);
@@ -71,7 +70,7 @@ export const useReportsPage = (): UseReportsPageReturn => {
       });
     } catch (err) {
       setError('Error al cargar los datos del reporte');
-      logger.error('useReportsPage: Error fetching report data', err as Error);
+      console.error('Error fetching report data:', err);
     } finally {
       setLoading(false);
     }
@@ -101,7 +100,7 @@ export const useReportsPage = (): UseReportsPageReturn => {
         includeCharts: reportConfig.includeCharts
       });
     } catch (error) {
-      logger.error('useReportsPage: Error generating PDF', error as Error);
+      console.error('Error generating PDF:', error);
       throw error;
     } finally {
       setGenerating(false);
@@ -122,7 +121,7 @@ export const useReportsPage = (): UseReportsPageReturn => {
         includeCharts: reportConfig.includeCharts
       });
     } catch (error) {
-      logger.error('useReportsPage: Error generating Excel', error as Error);
+      console.error('Error generating Excel:', error);
       throw error;
     } finally {
       setGenerating(false);
@@ -143,7 +142,7 @@ export const useReportsPage = (): UseReportsPageReturn => {
         includeCharts: reportConfig.includeCharts
       });
     } catch (error) {
-      logger.error('useReportsPage: Error generating CSV', error as Error);
+      console.error('Error generating CSV:', error);
       throw error;
     } finally {
       setGenerating(false);
@@ -167,7 +166,7 @@ export const useReportsPage = (): UseReportsPageReturn => {
           throw new Error(`Formato no soportado: ${reportConfig.format}`);
       }
     } catch (error) {
-      logger.error('useReportsPage: Error generating report', error as Error);
+      console.error('Error generating report:', error);
       throw error;
     }
   }, [reportConfig.format, generatePDF, generateExcel, generateCSV]);

@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
-import { logger } from '@/shared/utils/logger'
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -69,7 +68,7 @@ const parseDate = (dateString: string): Date => {
   }
   
   // Si no se puede parsear, devolver la fecha actual
-  logger.warn(`Invalid date format: ${dateString}`);
+  console.warn('Invalid date format:', dateString);
   return new Date();
 };
 
@@ -148,7 +147,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         setCurrentDate(parsedDate);
         setSelectedDate(parsedDate);
       } catch (error) {
-        logger.warn(`Invalid date format: ${value}`);
+        console.warn('Invalid date format:', value);
       }
     } else {
       setSelectedDate(null);

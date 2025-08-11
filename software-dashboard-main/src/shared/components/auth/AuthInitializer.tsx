@@ -6,7 +6,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '@/shared/store';
 import { LoadingScreen } from '@/shared/components/ui/LoadingSpinner';
-import { logger } from '@/shared/utils/logger'
 
 // =============================================================================
 // AUTH INITIALIZER PROPS - Props del componente
@@ -39,7 +38,7 @@ export const AuthInitializer: React.FC<AuthInitializerProps> = ({ children }) =>
         if (error && typeof error === 'object' && 'message' in error) {
           const errorMessage = (error as any).message;
           if (!errorMessage.includes('403') && !errorMessage.includes('Forbidden')) {
-            logger.error('AuthInitializer: Error initializing auth', error as Error);
+            console.error('Error initializing auth:', error);
           }
         }
       } finally {

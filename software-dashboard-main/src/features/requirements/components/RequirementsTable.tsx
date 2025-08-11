@@ -247,9 +247,6 @@ export const RequirementsTable: React.FC<RequirementsTableProps> = ({
       items={requirements}
       loading={loading}
       config={config}
-      virtualizeTableThreshold={50}
-      virtualListHeight={560}
-      virtualRowHeight={74}
     />
   );
 };

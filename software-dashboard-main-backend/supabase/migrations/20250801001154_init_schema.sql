@@ -228,7 +228,7 @@ comment on table public.attachments is 'Archivos adjuntos a incidencias y requer
 create table public.recent_activities (
   id          uuid primary key default gen_random_uuid(),
   type        text not null check (type in ('incident','requirement','user')),
-  action      text not null check (action in ('created','updated','resolved','closed','approved','rejected')),
+  action      text not null check (action in ('created','updated','resolved','closed','approved','rejected','deleted')),
   title       text not null,
   description text not null,
   timestamp   timestamptz not null default now(),

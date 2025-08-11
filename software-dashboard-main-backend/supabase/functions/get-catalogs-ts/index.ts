@@ -1,136 +1,54 @@
-// supabase/functions/get-catalogs-ts/index.ts
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// =============================================================================
+// GET-CATALOGS-TS - Router REST de catálogos transversales (Hono)
+// =============================================================================
+// Objetivo: Exponer catálogos (departamentos, roles) de forma clara y tipada.
+// Diseño: Router Hono con middlewares, controladores por recurso y contratos
+//         validados. Tipos centralizados en app/types/*.
+// =============================================================================
 
-// 🔧 CONFIGURACIÓN PARA CATÁLOGOS
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Cache-Control': 'public, max-age=300', // Cache por 5 minutos
-  'Content-Type': 'application/json'
-};
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { logger } from 'hono/logger'
+import { z } from 'zod'
+import { getDepartments } from "@controllers/getDepartments.ts"
+import { getRoles } from "@controllers/getRoles.ts"
 
-// 📊 TIPOS PARA CATÁLOGOS
-interface Department {
-  id: number;
-  name: string;
-  short_name: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// Validaciones ligeras con Zod para garantizar estabilidad de contratos ante refactors
+const DepartmentsResponse = z.object({ departments: z.array(z.object({ id: z.number(), name: z.string(), short_name: z.string(), is_active: z.boolean() })) })
+const RolesResponse = z.object({ roles: z.array(z.object({ id: z.number(), name: z.string(), description: z.string(), is_active: z.boolean() })) })
 
-interface Role {
-  id: number;
-  name: string;
-  description: string;
-  permissions: any;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+const functionName = 'get-catalogs-ts'
+const app = new Hono().basePath(`/${functionName}`)
 
-interface CatalogsResponse {
-  departments: Department[];
-  roles: Role[];
-  success: boolean;
-  error?: string;
-}
+app.use('/*', cors())
+app.use('/*', logger())
 
-// 🔧 FUNCIÓN PRINCIPAL
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+app.get('/departments', async (c) => {
+  const res = await getDepartments(c as any)
+  const parsed = DepartmentsResponse.safeParse(await res.clone().json())
+  if (!parsed.success) return c.json({ error: 'Contrato inválido en departamentos' }, 500)
+  return res
+})
 
-  try {
-    // 🔐 VALIDACIÓN DE AUTENTICACIÓN
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('Authorization header required');
-    }
+app.get('/roles', async (c) => {
+  const res = await getRoles(c as any)
+  const parsed = RolesResponse.safeParse(await res.clone().json())
+  if (!parsed.success) return c.json({ error: 'Contrato inválido en roles' }, 500)
+  return res
+})
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    );
+// Back-compat: POST devuelve ambos catálogos
+app.post('/', async (c) => {
+  const depRes = await getDepartments(c as any)
+  const roleRes = await getRoles(c as any)
+  const deps = await depRes.json()
+  const roles = await roleRes.json()
+  return c.json({ success: true, departments: deps.departments ?? [], roles: roles.roles ?? [] })
+})
 
-    // 🔍 OBTENER USUARIO ACTUAL
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Invalid user');
-    }
+app.onError((err, c) => {
+  console.error(err)
+  return c.json({ error: err.message }, 400)
+})
 
-    // 📊 OBTENER DEPARTAMENTOS ACTIVOS
-    const { data: departments, error: deptError } = await supabase
-      .from('departments')
-      .select('*')
-      .eq('is_active', true)
-      .order('name');
-
-    if (deptError) {
-      throw new Error(`Error obteniendo departamentos: ${deptError.message}`);
-    }
-
-    // 🔐 OBTENER ROLES ACTIVOS
-    const { data: roles, error: roleError } = await supabase
-      .from('roles')
-      .select('*')
-      .eq('is_active', true)
-      .order('name');
-
-    if (roleError) {
-      throw new Error(`Error obteniendo roles: ${roleError.message}`);
-    }
-
-    // 📈 LOG DE ACTIVIDAD
-    await supabase
-      .from('recent_activities')
-      .insert({
-        type: 'catalog',
-        action: 'viewed',
-        title: 'Catálogos consultados',
-        description: `Usuario ${user.email} consultó catálogos de departamentos y roles`,
-        user_id: user.id,
-        item_id: 'catalogs'
-      });
-
-    // ✅ RESPUESTA EXITOSA
-    const response: CatalogsResponse = {
-      departments: departments || [],
-      roles: roles || [],
-      success: true
-    };
-
-    return new Response(
-      JSON.stringify(response),
-      { 
-        headers: corsHeaders,
-        status: 200 
-      }
-    );
-
-  } catch (error) {
-    console.error('❌ Error en get-catalogs:', error);
-
-    const errorResponse: CatalogsResponse = {
-      departments: [],
-      roles: [],
-      success: false,
-      error: error.message
-    };
-
-    return new Response(
-      JSON.stringify(errorResponse),
-      { 
-        headers: corsHeaders,
-        status: 400 
-      }
-    );
-  }
-}); 
+Deno.serve(app.fetch)

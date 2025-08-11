@@ -4,7 +4,6 @@
 // =============================================================================
 
 import { useRef, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
-import { logger } from '@/shared/utils/logger'
 
 // =============================================================================
 // REFRESH CONTEXT - Contexto para compartir el sistema de refresh
@@ -220,7 +219,7 @@ export const useCentralizedRefresh = (stores: {
           refreshCallback.lastExecuted = now;
           refreshCallback.nextExecution = now + (refreshCallback.config.interval || settings.config.dashboard.refreshInterval);
         } catch (error) {
-          logger.error(`Error ejecutando refresh ${id}: ${(error as Error)?.message}`)
+          console.error(`Error ejecutando refresh ${id}:`, error);
         }
       }
     });

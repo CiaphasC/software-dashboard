@@ -25,7 +25,7 @@ export const useIncidentsPage = () => {
 
   // Store de incidencias
   const { 
-    items: incidents, 
+    incidents, 
     loading, 
     error, 
     loadIncidents,

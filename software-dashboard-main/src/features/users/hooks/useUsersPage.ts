@@ -9,7 +9,6 @@ import { useAuthStore, useUsersStore } from '@/shared/store';
 import { authService } from '@/shared/services/supabase';
 import { User, PendingUser } from '@/shared/types/common.types';
 import { useComponentRefresh } from '@/shared/hooks/useCentralizedRefresh.tsx';
-import { logger } from '@/shared/utils/logger'
 
 // =============================================================================
 // USE USERS PAGE - Hook principal
@@ -93,7 +92,7 @@ export const useUsersPage = () => {
       }));
       setPendingUsers(pendingUsers);
     } catch (error) {
-      logger.error('useUsersPage: Error cargando usuarios pendientes', error as Error);
+      console.error('Error cargando usuarios pendientes:', error);
     }
   }, []);
 
@@ -122,7 +121,7 @@ export const useUsersPage = () => {
       closeForm();
       manualRefresh();
     } catch (error) {
-      logger.error('useUsersPage: Error creando usuario', error as Error);
+      console.error('Error creando usuario:', error);
       toast.error('Error creando usuario');
     }
   }, [createUser, closeForm, manualRefresh]);
@@ -136,7 +135,7 @@ export const useUsersPage = () => {
       closeForm();
       manualRefresh();
     } catch (error) {
-      logger.error('useUsersPage: Error actualizando usuario', error as Error);
+      console.error('Error actualizando usuario:', error);
       toast.error('Error actualizando usuario');
     }
   }, [editingUser, updateUser, closeForm, manualRefresh]);
@@ -147,7 +146,7 @@ export const useUsersPage = () => {
       toast.success('Usuario eliminado exitosamente');
       manualRefresh();
     } catch (error) {
-      logger.error('useUsersPage: Error eliminando usuario', error as Error);
+      console.error('Error eliminando usuario:', error);
       toast.error('Error eliminando usuario');
     }
   }, [deleteUser, manualRefresh]);
@@ -166,7 +165,7 @@ export const useUsersPage = () => {
       updatePendingUsersCount();
       manualRefresh();
     } catch (error) {
-      logger.error('useUsersPage: Error aprobando usuario', error as Error);
+      console.error('Error aprobando usuario:', error);
       toast.error('Error aprobando usuario');
     }
   }, [currentUser, loadPendingUsers, updatePendingUsersCount, manualRefresh]);
@@ -181,7 +180,7 @@ export const useUsersPage = () => {
       updatePendingUsersCount();
       manualRefresh();
     } catch (error) {
-      logger.error('useUsersPage: Error rechazando solicitud', error as Error);
+      console.error('Error rechazando solicitud:', error);
       toast.error('Error rechazando solicitud');
     }
   }, [currentUser, loadPendingUsers, updatePendingUsersCount, manualRefresh]);

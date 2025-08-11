@@ -3,13 +3,12 @@
 // Arquitectura de Software Profesional - Gestión de Estado de Usuarios
 // =============================================================================
 
-import { authService } from '@/shared/services/supabase'
-import type { CreateUserData, UpdateUserData } from '@/shared/services/supabase'
-import { usersRepository } from '@/shared/repositories/UsersRepository'
-import type { UserDomain, UserMetricsDomain } from '@/shared/domain/user'
-import { createPaginatedEntityStore } from '@/shared/store/createPaginatedEntityStore'
-import { logAndExtractError } from '@/shared/utils/errorUtils'
-import { withOptimisticItems, updateItemById, removeItemById, prependPlaceholder } from '@/shared/store/optimistic'
+import { create } from 'zustand';
+import { logger } from '@/shared/utils/logger';
+import { authService } from '@/shared/services/supabase';
+import type { CreateUserData, UpdateUserData } from '@/shared/services/supabase';
+import { usersRepository } from '@/shared/repositories/UsersRepository';
+import type { UserDomain, UserMetricsDomain } from '@/shared/domain/user';
 
 // =============================================================================
 // USERS STATE - Estado de usuarios
@@ -79,17 +78,22 @@ export interface UsersActions {
 // USERS STORE - Store completo de usuarios
 // =============================================================================
 
-// Base store con factory genérica
-type UsersQuery = { page?: number; limit?: number; search?: string; filters?: { role?: string } }
-
-const useUsersBase = createPaginatedEntityStore<
-  UserDomain,
-  UsersQuery,
-  UserMetricsDomain,
-  UserDomain,
-  { role?: string }
->({
-  initialStats: {
+export const useUsersStore = create<UsersState & UsersActions>()((set, get) => ({
+  // =============================================================================
+  // INITIAL STATE - Estado inicial
+  // =============================================================================
+  
+  users: [],
+  loading: false,
+  error: null,
+  filters: {},
+  searchQuery: '',
+  currentPage: 1,
+  totalPages: 1,
+  totalUsers: 0,
+  usersPerPage: 20,
+  hasMore: true,
+  stats: {
     totalUsers: 0,
     activeUsers: 0,
     inactiveUsers: 0,
@@ -97,155 +101,198 @@ const useUsersBase = createPaginatedEntityStore<
     technicians: 0,
     requesters: 0,
   },
-  defaultItemsPerPage: 20,
-  list: async (q) => {
-    const res = await usersRepository.list({
-      page: q.page,
-      limit: q.limit,
-      search: q.search,
-      role: q.filters?.role,
-    })
-    return { items: res.items as UserDomain[], total: res.total, page: res.page, limit: res.limit, hasMore: res.hasMore }
+
+  // =============================================================================
+  // UTILITY FUNCTIONS - Funciones de utilidad
+  // =============================================================================
+
+  /**
+   * Calcular estadísticas basadas en los usuarios actuales
+   */
+  updateStats: () => {
+    const users = get().users;
+    const totalUsers = users.length;
+    const activeUsers = users.filter(u => u.isActive).length;
+    const inactiveUsers = totalUsers - activeUsers;
+    const admins = users.filter(u => u.role === 'admin').length;
+    const technicians = users.filter(u => u.role === 'technician').length;
+    const requesters = users.filter(u => u.role === 'requester').length;
+    set({ stats: { totalUsers, activeUsers, inactiveUsers, admins, technicians, requesters } });
   },
-  metrics: () => usersRepository.metrics(),
-  mapToDomain: (u) => u,
-})
 
-// Guardar referencias base para evitar recursiones al envolver acciones
-const baseUsersSetFilters = useUsersBase.getState().setFilters
-const baseUsersClearFilters = useUsersBase.getState().clearFilters
+  // =============================================================================
+  // DATA LOADING ACTIONS - Acciones de carga de datos
+  // =============================================================================
 
-// Extensiones específicas y compatibilidad con API actual
-useUsersBase.setState((state) => ({
-  // Alias de datos
-  users: state.items as UserDomain[],
-
-  // Stats: mantener backend, con fallback local si falla
-  updateStats: async () => {
+  loadUsers: async () => {
+    set({ loading: true, error: null });
+    
     try {
-      const metrics = await usersRepository.metrics()
-      useUsersBase.setState({ stats: metrics })
-    } catch {
-      const users = useUsersBase.getState().items as UserDomain[]
-      const totalUsers = users.length
-      const activeUsers = users.filter(u => u.isActive).length
-      const inactiveUsers = totalUsers - activeUsers
-      const admins = users.filter(u => u.role === 'admin').length
-      const technicians = users.filter(u => u.role === 'technician').length
-      const requesters = users.filter(u => u.role === 'requester').length
-      useUsersBase.setState({ stats: { totalUsers, activeUsers, inactiveUsers, admins, technicians, requesters } })
+      const { currentPage, usersPerPage, filters, searchQuery } = get();
+      const result = await usersRepository.list({ page: 1, limit: 10000, search: searchQuery, role: filters.role });
+      const totalPages = Math.ceil(result.total / usersPerPage);
+      set((state) => ({
+        users: result.items,
+        totalUsers: result.total,
+        totalPages,
+        hasMore: false,
+        loading: false,
+        error: null
+      }));
+      get().updateStats();
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al cargar usuarios'
+      });
+      logger.error('Error al cargar usuarios', (error as Error).message)
     }
   },
 
-  // Carga con compat alias
-  loadUsers: async () => {
-    await useUsersBase.getState().load()
-    useUsersBase.setState((s) => ({ users: s.items as UserDomain[] }))
-  },
   loadMoreUsers: async () => {
-    await useUsersBase.getState().loadMore()
-    useUsersBase.setState((s) => ({ users: s.items as UserDomain[] }))
+    const { hasMore, currentPage } = get();
+    if (!hasMore) return;
+    set({ currentPage: currentPage + 1 });
+    await get().loadUsers();
   },
 
-  // Filtros y paginación
-  setFilters: (filters: Record<string, string>) => {
-    baseUsersSetFilters({ role: filters.role })
-    setTimeout(() => useUsersBase.setState((s) => ({ users: s.items as UserDomain[] })), 0)
-  },
-  setSearchQuery: (query: string) => {
-    useUsersBase.getState().setSearch(query)
-    setTimeout(() => useUsersBase.setState((s) => ({ users: s.items as UserDomain[] })), 0)
-  },
-  clearFilters: () => {
-    baseUsersClearFilters()
-    setTimeout(() => useUsersBase.setState((s) => ({ users: s.items as UserDomain[] })), 0)
-  },
-  setCurrentPage: (page: number) => {
-    useUsersBase.getState().setPage(page)
-    setTimeout(() => useUsersBase.setState((s) => ({ users: s.items as UserDomain[] })), 0)
-  },
-  setUsersPerPage: (perPage: number) => {
-    useUsersBase.getState().setPageSize(perPage)
-    setTimeout(() => useUsersBase.setState((s) => ({ users: s.items as UserDomain[] })), 0)
-  },
+  // =============================================================================
+  // CRUD ACTIONS - Acciones CRUD
+  // =============================================================================
 
-  // Estado
-  clearError: () => useUsersBase.setState({ error: null }),
-
-  // CRUD con normalización de errores
   createUser: async (userData: CreateUserData) => {
-    const adapter = { get: useUsersBase.getState, set: useUsersBase.setState }
-    await withOptimisticItems<UserDomain, ReturnType<typeof useUsersBase.getState>>(adapter as any, (items) => {
-      const tempId = `temp-${Date.now()}`
-      const placeholder: UserDomain = { id: tempId, name: userData.name, email: userData.email, role: userData.role_name || 'user', departmentId: null, isActive: true }
-      return prependPlaceholder(items, placeholder)
-    }, async () => {
-      await authService.createUser(userData)
-      await useUsersBase.getState().load()
-      useUsersBase.setState((s) => ({ users: s.items as UserDomain[] }))
-    })
-  },
-  updateUser: async (userId: string, updates: UpdateUserData) => {
-    const adapter = { get: useUsersBase.getState, set: useUsersBase.setState }
-    await withOptimisticItems<UserDomain, ReturnType<typeof useUsersBase.getState>>(adapter as any, (items) => updateItemById(items, userId, (curr) => ({ ...curr, ...updates } as any)), async () => {
-      await authService.updateUser(userId, updates)
-      await useUsersBase.getState().load()
-      useUsersBase.setState((s) => ({ users: s.items as UserDomain[] }))
-    })
-  },
-  deleteUser: async (userId: string) => {
-    const adapter = { get: useUsersBase.getState, set: useUsersBase.setState }
-    await withOptimisticItems<UserDomain, ReturnType<typeof useUsersBase.getState>>(adapter as any, (items) => removeItemById(items, userId), async () => {
-      await authService.deleteUser(userId)
-      await useUsersBase.getState().load()
-      useUsersBase.setState((s) => ({ users: s.items as UserDomain[] }))
-    })
+    set({ loading: true, error: null });
+    
+    try {
+      await authService.createUser(userData);
+      await get().loadUsers(); // Recargar lista
+      set({ loading: false, error: null });
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al crear usuario'
+      });
+      throw error;
+    }
   },
 
-  // Registro pendiente (se mantiene, sólo normalizamos errores en llamadas locales)
+  updateUser: async (userId: string, updates: UpdateUserData) => {
+    set({ loading: true, error: null });
+    
+    try {
+      await authService.updateUser(userId, updates);
+      await get().loadUsers(); // Recargar lista
+      set({ loading: false, error: null });
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al actualizar usuario'
+      });
+      throw error;
+    }
+  },
+
+  deleteUser: async (userId: string) => {
+    set({ loading: true, error: null });
+    
+    try {
+      await authService.deleteUser(userId);
+      await get().loadUsers(); // Recargar lista
+      set({ loading: false, error: null });
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al eliminar usuario'
+      });
+      throw error;
+    }
+  },
+
+  // =============================================================================
+  // REGISTRATION REQUESTS ACTIONS - Acciones de solicitudes de registro
+  // =============================================================================
+
   loadPendingUsers: async () => {
     try {
-      const pendingRequests = await authService.getPendingRegistrationRequests()
-      return pendingRequests.map(mapProfileToUser)
+      const pendingRequests = await authService.getPendingRegistrationRequests();
+      // Mapear a tipos de la aplicación
+      return pendingRequests.map(mapProfileToUser);
     } catch (error) {
-      throw error
+      logger.error('Error loading pending users:', (error as Error).message);
+      throw error;
     }
   },
+
   approvePendingUser: async (pendingUserId: string, approvedBy: string, roleName?: string) => {
     try {
-      await authService.approveRegistrationRequest(pendingUserId, approvedBy, roleName)
-      await useUsersBase.getState().load()
-      useUsersBase.setState((s) => ({ users: s.items as UserDomain[] }))
+      await authService.approveRegistrationRequest(pendingUserId, approvedBy, roleName);
+      await get().loadUsers(); // Recargar lista
     } catch (error) {
-      throw error
+      logger.error('Error approving pending user:', (error as Error).message);
+      throw error;
     }
   },
-  rejectPendingUser: async (pendingUserId: string, _rejectedBy: string, reason: string) => {
-    try {
-      await authService.rejectRegistrationRequest(pendingUserId, reason)
-    } catch (error) {
-      throw error
-    }
-  },
-}))
 
-export const useUsersStore = useUsersBase as unknown as (typeof useUsersBase & {
-  getState: () => ReturnType<typeof useUsersBase.getState> & {
-    users: UserDomain[]
-    loadUsers: () => Promise<void>
-    loadMoreUsers: () => Promise<void>
-    setFilters: (filters: Record<string, string>) => void
-    setSearchQuery: (query: string) => void
-    clearFilters: () => void
-    setCurrentPage: (page: number) => void
-    setUsersPerPage: (perPage: number) => void
-    clearError: () => void
-    updateStats: () => Promise<void>
-    createUser: (userData: CreateUserData) => Promise<void>
-    updateUser: (userId: string, updates: UpdateUserData) => Promise<void>
-    deleteUser: (userId: string) => Promise<void>
-    loadPendingUsers: () => Promise<UserDomain[]>
-    approvePendingUser: (pendingUserId: string, approvedBy: string, roleName?: string) => Promise<void>
-    rejectPendingUser: (pendingUserId: string, rejectedBy: string, reason: string) => Promise<void>
+  rejectPendingUser: async (pendingUserId: string, rejectedBy: string, reason: string) => {
+    try {
+      await authService.rejectRegistrationRequest(pendingUserId, reason);
+    } catch (error) {
+      logger.error('Error rejecting pending user:', (error as Error).message);
+      throw error;
+    }
+  },
+
+  // =============================================================================
+  // FILTERS AND SEARCH ACTIONS - Acciones de filtros y búsqueda
+  // =============================================================================
+
+  setFilters: (filters: Record<string, string>) => {
+    set({ filters, currentPage: 1, hasMore: true });
+    get().loadUsers(); // Recargar con nuevos filtros
+  },
+
+  setSearchQuery: (query: string) => {
+    set({ searchQuery: query, currentPage: 1, hasMore: true });
+    get().loadUsers(); // Recargar con nueva búsqueda
+  },
+
+  clearFilters: () => {
+    set({ 
+      filters: {}, 
+      searchQuery: '', 
+      currentPage: 1,
+      hasMore: true
+    });
+    get().loadUsers(); // Recargar sin filtros
+  },
+
+  // =============================================================================
+  // PAGINATION ACTIONS - Acciones de paginación
+  // =============================================================================
+
+  setCurrentPage: (page: number) => {
+    set({ currentPage: page });
+    get().loadUsers(); // Recargar con nueva página
+  },
+
+  setUsersPerPage: (perPage: number) => {
+    set({ usersPerPage: perPage, currentPage: 1 }); // Reset a primera página
+    get().loadUsers(); // Recargar con nuevo tamaño de página
+  },
+
+  // =============================================================================
+  // STATE MANAGEMENT ACTIONS - Acciones de gestión de estado
+  // =============================================================================
+
+  setLoading: (loading: boolean) => {
+    set({ loading });
+  },
+
+  setError: (error: string | null) => {
+    set({ error });
+  },
+
+  clearError: () => {
+    set({ error: null });
   }
-})
+})); 

@@ -3,6 +3,7 @@
 // =============================================================================
 
 export { supabase, connectionManager, realtimeManager, edgeFunctions } from './client'
+export * from './functions.types'
 
 export type {
   Database,

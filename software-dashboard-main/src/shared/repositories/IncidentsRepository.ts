@@ -72,8 +72,8 @@ export class IncidentsRepository {
   }
 
   async get(id: string): Promise<IncidentDomain | null> {
-    const item = await dataService.getIncident(id)
-    return item ? mapToDomain(item) : null
+    const item = await edgeFunctionsService.getIncident(id)
+    return item ? mapToDomain(item as any) : null
   }
 }
 

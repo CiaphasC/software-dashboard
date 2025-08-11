@@ -4,7 +4,6 @@
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js'
-import { logger } from '@/shared/utils/logger'
 import type { Database } from './types'
 
 // =============================================================================
@@ -31,7 +30,7 @@ class SupabaseClientManager {
   private supabaseAdminClient: ReturnType<typeof createClient<Database>> | null = null;
 
   private constructor() {
-    logger.debug('🔧 SupabaseClientManager: Instancia creada');
+    console.log('🔧 SupabaseClientManager: Instancia creada');
   }
 
   static getInstance(): SupabaseClientManager {
@@ -43,7 +42,7 @@ class SupabaseClientManager {
 
   getSupabaseClient(): ReturnType<typeof createClient<Database>> {
     if (!this.supabaseClient) {
-logger.debug('🔧 SupabaseClientManager: Creando cliente Supabase');
+      console.log('🔧 SupabaseClientManager: Creando cliente Supabase');
       this.supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
         auth: {
           autoRefreshToken: true,
@@ -114,16 +113,16 @@ class ConnectionManager {
         .limit(1)
       
       if (error) {
-logger.error('❌ Error de conexión a Supabase:', error)
+        console.error('❌ Error de conexión a Supabase:', error)
         this.isConnected = false
         return false
       }
       
-logger.info('✅ Conexión a Supabase establecida')
+      console.log('✅ Conexión a Supabase establecida')
       this.isConnected = true
       return true
     } catch (error) {
-logger.error('❌ Error de conexión:', error)
+      console.error('❌ Error de conexión:', error)
       this.isConnected = false
       return false
     } finally {
@@ -212,7 +211,7 @@ export class EdgeFunctionsManager {
       
       return result as T
     } catch (error) {
-logger.error(`❌ Error ejecutando ${functionName}:`, error)
+      console.error(`❌ Error ejecutando ${functionName}:`, error)
       throw error
     }
   }

@@ -10,8 +10,6 @@ type IntentionKey =
   | 'requirements:metrics'
   | 'users:firstPage'
   | 'users:metrics'
-  | 'reports:bundle'
-  | 'reports:initialData'
 
 export const prefetchRegistry: Record<IntentionKey, () => Promise<any>> = {
   'incidents:firstPage': () => fetchWithCache('incidents:firstPage', () => incidentsRepository.list({ page: 1, limit: 20 })),
@@ -20,20 +18,5 @@ export const prefetchRegistry: Record<IntentionKey, () => Promise<any>> = {
   'requirements:metrics'  : () => fetchWithCache('requirements:metrics', () => requirementsRepository.metrics()),
   'users:firstPage': () => fetchWithCache('users:firstPage', () => usersRepository.list({ page: 1, limit: 20 })),
   'users:metrics'  : () => fetchWithCache('users:metrics', () => usersRepository.metrics()),
-  'reports:bundle': () => import('@/features/reports/pages/ReportsPage'),
-  'reports:initialData': async () => {
-    // Cargar datos necesarios para Reports por adelantado
-    const [{ useIncidentsStore }, { useRequirementsStore }, { dataService }] = await Promise.all([
-      import('@/shared/store/incidentsStore'),
-      import('@/shared/store/requirementsStore'),
-      import('@/shared/services/supabase')
-    ])
-    // Disparar cargas concurrentes (primera página) y métricas de dashboard
-    await Promise.all([
-      useIncidentsStore.getState().loadIncidents(),
-      useRequirementsStore.getState().loadRequirements(),
-      dataService.getDashboardMetrics()
-    ])
-  },
 }
 

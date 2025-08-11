@@ -1,0 +1,16 @@
+{
+  "imports": {
+    "hono": "jsr:@hono/hono@4",
+    "hono/cors": "jsr:@hono/hono@4/cors",
+    "hono/logger": "jsr:@hono/hono@4/logger",
+    "zod": "npm:zod@^3.22.4",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
+    "@shared/": "../_shared/",
+    "@controllers/": "./app/controllers/",
+    "@schemas/": "./app/schemas/",
+    "@services/": "./app/services/",
+    "@middlewares/": "./app/middlewares/"
+  }
+}
+
+

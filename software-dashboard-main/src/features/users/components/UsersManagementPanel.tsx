@@ -25,6 +25,7 @@ import { PendingUsersList } from './PendingUsersList';
 import { UserStatsCards } from './UserStatsCards';
 import { ViewToggle } from './ViewToggle';
 import { User as UserType, PendingUser } from '@/shared/types/common.types';
+import { usersRepository } from '@/shared/repositories/UsersRepository';
 
 // =============================================================================
 // USERS MANAGEMENT PANEL - Componente principal ultra modernizado
@@ -39,8 +40,7 @@ interface UsersManagementPanelProps {
   onDelete: (userId: string) => void;
   onNewUser?: () => void;
   onApprove?: (userId: string) => void;
-  onReject?: (userId: string) => void;
-  onRefresh?: () => void;
+  onReject?: (userId: string, reason: string) => void;
 }
 
 export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
@@ -53,30 +53,27 @@ export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
   onNewUser,
   onApprove,
   onReject,
-  onRefresh,
 }) => {
   const [currentView, setCurrentView] = useState<'active' | 'pending'>('active');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
 
   const handleViewChange = (view: 'active' | 'pending') => {
     setCurrentView(view);
   };
 
+  useEffect(() => {
+    // Prefetch silencioso para asegurar que no falten usuarios
+    if (isAdmin) {
+      usersRepository.list({ page: 1, limit: 10000 }).catch(() => {});
+    }
+  }, [isAdmin]);
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Skeleton ligero para estadísticas cuando loading */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="p-4 rounded-xl bg-white/80 border border-gray-100 shadow-sm">
-              <div className="h-4 w-28 bg-gray-200 rounded animate-pulse mb-3" />
-              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
-            </div>
-          ))}
-        </div>
-      ) : (
+      {/* Estadísticas de usuarios con glassmorphism */}
       <motion.div
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -84,7 +81,6 @@ export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
       >
         <UserStatsCards />
       </motion.div>
-      )}
 
       {/* Panel principal con glassmorphism y gradientes avanzados */}
       <motion.div
@@ -131,39 +127,26 @@ export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
                 </div>
               </div>
               
-              {/* Acciones: Actualizar y Nuevo Usuario */}
-              <div className="flex items-center gap-2">
-                {onRefresh && (
+              {/* Botón Nuevo Usuario con diseño elegante */}
+              {isAdmin && currentView === 'active' && onNewUser && (
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full sm:w-auto"
+                >
                   <Button
-                    variant="outline"
+                    onClick={onNewUser}
+                    variant="primary"
                     size="lg"
-                    onClick={onRefresh}
-                    className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50"
+                    className="relative bg-gradient-to-r from-slate-600 to-slate-800 hover:from-slate-700 hover:to-slate-900 text-white font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden group w-full sm:w-auto"
                   >
-                    <Zap className="h-4 w-4 mr-2" />
-                    Actualizar
+                    {/* Efecto de brillo en hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
+                    <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 mr-2 relative z-10" />
+                    <span className="relative z-10 text-sm sm:text-base">Nuevo Usuario</span>
                   </Button>
-                )}
-                {isAdmin && currentView === 'active' && onNewUser && (
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full sm:w-auto"
-                  >
-                    <Button
-                      onClick={onNewUser}
-                      variant="primary"
-                      size="lg"
-                      className="relative bg-gradient-to-r from-slate-600 to-slate-800 hover:from-slate-700 hover:to-slate-900 text-white font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden group w-full sm:w-auto"
-                    >
-                      {/* Efecto de brillo en hover */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
-                      <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 mr-2 relative z-10" />
-                      <span className="relative z-10 text-sm sm:text-base">Nuevo Usuario</span>
-                    </Button>
-                  </motion.div>
-                )}
-              </div>
+                </motion.div>
+              )}
             </div>
           </CardHeader>
 
@@ -244,6 +227,14 @@ export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
                         className="w-full bg-white/90 backdrop-blur-sm border-gray-200 hover:border-blue-300 focus:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md rounded-xl px-4 py-2.5 text-sm"
                       />
                     </div>
+
+                    {/* Toggle mostrar inactivos (solo admin) */}
+                    {isAdmin && (
+                      <label className="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" checked={showInactive} onChange={(e)=>setShowInactive(e.target.checked)} />
+                        Mostrar inactivos
+                      </label>
+                    )}
                     
                     {/* Toggle de vista - Solo visible en pantallas xl y superiores */}
                     <div className="hidden xl:flex items-center bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl p-1.5 shadow-lg">
@@ -256,35 +247,18 @@ export const UsersManagementPanel: React.FC<UsersManagementPanelProps> = ({
 
                   {/* Lista de usuarios */}
                   <div className="px-4 sm:px-6 pb-4 sm:pb-6 w-full">
-                    {loading ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {[...Array(9)].map((_, i) => (
-                          <div key={i} className="rounded-xl border border-gray-100 bg-white/80 p-4">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse" />
-                              <div className="flex-1">
-                                <div className="h-4 w-40 bg-gray-200 rounded animate-pulse mb-2" />
-                                <div className="h-3 w-28 bg-gray-100 rounded animate-pulse" />
-                              </div>
-                            </div>
-                            <div className="h-10 w-full bg-gray-100 rounded animate-pulse" />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <UsersList
-                        users={users}
-                        loading={loading}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                        isAdmin={isAdmin}
-                        onNewUser={onNewUser}
-                        viewMode={viewMode}
-                        onViewModeChange={setViewMode}
-                        searchQuery={searchQuery}
-                        roleFilter={roleFilter}
-                      />
-                    )}
+                    <UsersList
+                      users={users}
+                      loading={loading}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      isAdmin={isAdmin}
+                      onNewUser={onNewUser}
+                      viewMode={viewMode}
+                      onViewModeChange={setViewMode}
+                      searchQuery={searchQuery}
+                      roleFilter={roleFilter}
+                    />
                   </div>
                 </motion.div>
               )}

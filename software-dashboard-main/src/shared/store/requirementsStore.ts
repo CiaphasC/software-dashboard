@@ -3,13 +3,12 @@
 // Arquitectura de Software Profesional - Gestión de Estado de Requerimientos
 // =============================================================================
 
-import { FilterValues } from '@/shared/types/common.types'
-import { dataService } from '@/shared/services/supabase'
-import { requirementsRepository, type RequirementQuery } from '@/shared/repositories/RequirementsRepository'
-import type { RequirementDomain, RequirementMetricsDomain } from '@/shared/domain/requirement'
-import { createPaginatedEntityStore } from '@/shared/store/createPaginatedEntityStore'
-import { logAndExtractError } from '@/shared/utils/errorUtils'
-import { withOptimisticItems, updateItemById, removeItemById, prependPlaceholder } from '@/shared/store/optimistic'
+import { create } from 'zustand';
+import { FilterValues } from '@/shared/types/common.types';
+import { dataService } from '@/shared/services/supabase';
+import { logger } from '@/shared/utils/logger'
+import { requirementsRepository, type RequirementQuery } from '@/shared/repositories/RequirementsRepository';
+import type { RequirementDomain, RequirementMetricsDomain } from '@/shared/domain/requirement';
 
 // =============================================================================
 // REQUIREMENTS STATE - Estado de requerimientos
@@ -71,131 +70,212 @@ export interface RequirementsActions {
 // REQUIREMENTS STORE - Store completo de requerimientos
 // =============================================================================
 
-// Base store con factory genérica
-const useRequirementsBase = createPaginatedEntityStore<
-  RequirementDomain,
-  RequirementQuery,
-  RequirementMetricsDomain,
-  RequirementDomain,
-  FilterValues
->({
-  initialStats: {
+export const useRequirementsStore = create<RequirementsState & RequirementsActions>()((set, get) => ({
+  // =============================================================================
+  // INITIAL STATE - Estado inicial
+  // =============================================================================
+  
+  requirements: [],
+  loading: false,
+  error: null,
+  filters: {},
+  searchQuery: '',
+  currentPage: 1,
+  totalPages: 1,
+  itemsPerPage: 10,
+  totalItems: 0,
+  hasMore: true,
+  loadedPages: 0,
+  stats: {
     totalRequirements: 0,
     pendingRequirements: 0,
     inProgressRequirements: 0,
     completedRequirements: 0,
-    deliveredRequirements: 0,
+    deliveredRequirements: 0
   },
-  defaultItemsPerPage: 10,
-  list: (query) => requirementsRepository.list(query),
-  metrics: () => requirementsRepository.metrics(),
-  mapToDomain: (r) => r,
-})
 
-// Guardar referencias a acciones base que vamos a envolver para evitar recursión
-const baseSetFilters = useRequirementsBase.getState().setFilters
-const baseClearFilters = useRequirementsBase.getState().clearFilters
+  // =============================================================================
+  // CRUD ACTIONS - Acciones CRUD
+  // =============================================================================
 
-// Extensiones específicas y compatibilidad con API actual
-useRequirementsBase.setState((state) => ({
-  // Alias de datos para compatibilidad
-  requirements: state.items as RequirementDomain[],
-
-  // Carga principal con sincronización del alias
   loadRequirements: async (filters?: FilterValues) => {
-    if (filters) {
-      useRequirementsBase.getState().setFilters(filters)
-    }
-    await useRequirementsBase.getState().load()
-    useRequirementsBase.setState((s) => ({ requirements: s.items as RequirementDomain[] }))
-  },
+    set({ loading: true, error: null });
+    
+    try {
+      const currentFilters = filters || get().filters;
+      const searchQuery = get().searchQuery;
+      const currentPage = get().currentPage;
+      const itemsPerPage = get().itemsPerPage;
 
-  // Carga incremental
-  loadMoreRequirements: async () => {
-    await useRequirementsBase.getState().loadMore()
-    useRequirementsBase.setState((s) => ({ requirements: s.items as RequirementDomain[] }))
-  },
-
-  // Búsqueda y paginación, manteniendo mirror
-  setSearchQuery: (query: string) => {
-    useRequirementsBase.getState().setSearch(query)
-    // La ejecución de load ocurre dentro de setSearch; luego espejamos
-    setTimeout(() => useRequirementsBase.setState((s) => ({ requirements: s.items as RequirementDomain[] })), 0)
-  },
-  setCurrentPage: (page: number) => {
-    useRequirementsBase.getState().setPage(page)
-    setTimeout(() => useRequirementsBase.setState((s) => ({ requirements: s.items as RequirementDomain[] })), 0)
-  },
-  setItemsPerPage: (items: number) => {
-    useRequirementsBase.getState().setPageSize(items)
-    setTimeout(() => useRequirementsBase.setState((s) => ({ requirements: s.items as RequirementDomain[] })), 0)
-  },
-  setFilters: (filters: FilterValues) => {
-    // Usar referencia original para evitar que setFilters se invoque a sí mismo
-    baseSetFilters(filters)
-    setTimeout(() => useRequirementsBase.setState((s) => ({ requirements: s.items as RequirementDomain[] })), 0)
-  },
-  clearFilters: () => {
-    baseClearFilters()
-    setTimeout(() => useRequirementsBase.setState((s) => ({ requirements: s.items as RequirementDomain[] })), 0)
-  },
-
-  // Estado
-  clearError: () => useRequirementsBase.setState({ error: null }),
-
-  // CRUD con normalización de errores y recarga
-  createRequirement: async (requirementData: Partial<RequirementDomain>) => {
-    const adapter = { get: useRequirementsBase.getState, set: useRequirementsBase.setState }
-    await withOptimisticItems<RequirementDomain, ReturnType<typeof useRequirementsBase.getState>>(adapter as any, (items) => {
-      const tempId = `temp-${Date.now()}`
-      const placeholder: RequirementDomain = {
-        id: tempId,
-        title: requirementData.title || 'Creando...',
-        description: requirementData.description || '',
-        status: (requirementData.status as any) || 'pending',
-        priority: (requirementData.priority as any) || 'medium',
-        type: (requirementData.type as any) || 'other',
-        createdAt: new Date().toISOString(),
-        creatorName: requirementData.creatorName ?? null,
-        requestingAreaName: requirementData.requestingAreaName ?? null,
-        estimatedDeliveryDate: requirementData.estimatedDeliveryDate ?? null,
+      const query: RequirementQuery = {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchQuery,
+        filters: {
+          status: currentFilters.status,
+          priority: currentFilters.priority,
+          type: currentFilters.type,
+          assignedTo: currentFilters.assignedTo,
+          createdBy: currentFilters.createdBy,
+          department: currentFilters.department,
+          dateFrom: currentFilters.dateFrom,
+          dateTo: currentFilters.dateTo,
+        }
       }
-      return prependPlaceholder(items, placeholder)
-    }, async () => {
-      await dataService.createRequirement(requirementData)
-      await useRequirementsBase.getState().load()
-      useRequirementsBase.setState((s) => ({ requirements: s.items as RequirementDomain[] }))
-    })
-  },
-  updateRequirement: async (id: string, updates: Partial<RequirementDomain>) => {
-    const adapter = { get: useRequirementsBase.getState, set: useRequirementsBase.setState }
-    await withOptimisticItems<RequirementDomain, ReturnType<typeof useRequirementsBase.getState>>(adapter as any, (items) => updateItemById(items, id, (curr) => ({ ...curr, ...updates })), async () => {
-      await dataService.updateRequirement(id, updates)
-      await useRequirementsBase.getState().load()
-      useRequirementsBase.setState((s) => ({ requirements: s.items as RequirementDomain[] }))
-    })
-  },
-  deleteRequirement: async (id: string) => {
-    const adapter = { get: useRequirementsBase.getState, set: useRequirementsBase.setState }
-    await withOptimisticItems<RequirementDomain, ReturnType<typeof useRequirementsBase.getState>>(adapter as any, (items) => removeItemById(items, id), async () => {
-      await dataService.deleteRequirement(id)
-      await useRequirementsBase.getState().load()
-      useRequirementsBase.setState((s) => ({ requirements: s.items as RequirementDomain[] }))
-    })
-  },
-}))
+      const result = await requirementsRepository.list(query);
 
-export const useRequirementsStore = useRequirementsBase as unknown as (typeof useRequirementsBase & {
-  getState: () => ReturnType<typeof useRequirementsBase.getState> & {
-    requirements: RequirementDomain[]
-    loadRequirements: (filters?: FilterValues) => Promise<void>
-    loadMoreRequirements: () => Promise<void>
-    setSearchQuery: (query: string) => void
-    setCurrentPage: (page: number) => void
-    setItemsPerPage: (items: number) => void
-    clearError: () => void
-    createRequirement: (data: unknown) => Promise<void>
-    updateRequirement: (id: string, updates: unknown) => Promise<void>
-    deleteRequirement: (id: string) => Promise<void>
+      const totalPages = Math.ceil(result.total / itemsPerPage);
+
+      set((state) => ({
+        requirements: currentPage === 1 ? result.items : [...state.requirements, ...result.items],
+        totalItems: result.total,
+        totalPages,
+        hasMore: result.hasMore,
+        loadedPages: result.page,
+        loading: false,
+        error: null
+      }));
+
+      // Actualizar estadísticas
+      get().updateStats();
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al cargar requerimientos'
+      });
+      logger.error('Error al cargar requerimientos', (error as Error).message)
+    }
+  },
+
+  createRequirement: async (requirementData) => {
+    set({ loading: true, error: null });
+    
+    try {
+      await dataService.createRequirement(requirementData);
+      set({ currentPage: 1 });
+      await get().loadRequirements();
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al crear requerimiento'
+      });
+      logger.error('Error al crear requerimiento', (error as Error).message)
+    }
+  },
+
+  updateRequirement: async (id: string, updates: any) => {
+    set({ loading: true, error: null });
+    
+    try {
+      await dataService.updateRequirement(id, updates);
+      set({ currentPage: 1 });
+      await get().loadRequirements();
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al actualizar requerimiento'
+      });
+      logger.error('Error al actualizar requerimiento', (error as Error).message)
+    }
+  },
+
+  deleteRequirement: async (id: string) => {
+    set({ loading: true, error: null });
+    
+    try {
+      await dataService.deleteRequirement(id);
+      set({ currentPage: 1 });
+      await get().loadRequirements();
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al eliminar requerimiento'
+      });
+      logger.error('Error al eliminar requerimiento', (error as Error).message)
+    }
+  },
+
+  loadMoreRequirements: async () => {
+    const { hasMore, currentPage } = get();
+    if (!hasMore) return;
+    set({ currentPage: currentPage + 1 });
+    await get().loadRequirements();
+  },
+
+  // =============================================================================
+  // FILTERS AND SEARCH ACTIONS - Acciones de filtros y búsqueda
+  // =============================================================================
+
+  setFilters: (filters: FilterValues) => {
+    set({ filters, currentPage: 1, hasMore: true });
+    get().loadRequirements(filters);
+  },
+
+  setSearchQuery: (query: string) => {
+    set({ searchQuery: query, currentPage: 1, hasMore: true });
+    get().loadRequirements();
+  },
+
+  clearFilters: () => {
+    set({ 
+      filters: {}, 
+      searchQuery: '', 
+      currentPage: 1,
+      hasMore: true
+    });
+    get().loadRequirements();
+  },
+
+  // =============================================================================
+  // PAGINATION ACTIONS - Acciones de paginación
+  // =============================================================================
+
+  setCurrentPage: (page: number) => {
+    set({ currentPage: page });
+    get().loadRequirements();
+  },
+
+  setItemsPerPage: (items: number) => {
+    set({ itemsPerPage: items, currentPage: 1 });
+    get().loadRequirements();
+  },
+
+  // =============================================================================
+  // STATE MANAGEMENT ACTIONS - Acciones de gestión de estado
+  // =============================================================================
+
+  setLoading: (loading: boolean) => {
+    set({ loading });
+  },
+
+  setError: (error: string | null) => {
+    set({ error });
+  },
+
+  clearError: () => {
+    set({ error: null });
+  },
+
+  // =============================================================================
+  // STATISTICS ACTIONS - Acciones de estadísticas
+  // =============================================================================
+
+  updateStats: () => {
+    import('@/shared/services/supabase').then(async ({ edgeFunctionsService }) => {
+      try {
+        const metrics = await edgeFunctionsService.getRequirementMetrics();
+        set({ stats: metrics as any });
+      } catch {
+        const requirements = get().requirements;
+        const stats: RequirementMetricsDomain = {
+          totalRequirements: requirements.length,
+          pendingRequirements: requirements.filter(r => r.status === 'pending').length,
+          inProgressRequirements: requirements.filter(r => r.status === 'in_progress').length,
+          completedRequirements: requirements.filter(r => r.status === 'completed').length,
+          deliveredRequirements: requirements.filter(r => r.status === 'delivered').length
+        };
+        set({ stats });
+      }
+    })
   }
-})
+})); 
